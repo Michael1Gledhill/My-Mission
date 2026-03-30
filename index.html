@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elder Gledhill – Idaho Falls Mission</title>
+<meta name="description" content="Follow Elder Michael Gledhill's mission for The Church of Jesus Christ of Latter-day Saints in the Idaho Idaho Falls Mission.">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --gold:#C9A84C;--gold-light:#F0D898;--gold-dim:rgba(201,168,76,0.15);
+  --navy:#1A2744;--navy-mid:#243256;--navy-light:#2E3F6E;
+  --cream:#FAF6EE;--white:#fff;--text:#2C2C2C;--muted:#6b7280;
+  --green:#2a7a4a;--green-bg:#d4edda;--red:#c0392b;--red-bg:#fdecea;
+  --r:14px;--sh:0 4px 24px rgba(26,39,68,0.11);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+
+/* ── LOADER ── */
+#loader{position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s;}
+#loader.gone{opacity:0;pointer-events:none;}
+.loader-cross{font-size:3rem;animation:spin 2s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.loader-text{color:var(--gold-light);font-family:'Playfair Display',serif;font-size:1.1rem;margin-top:16px;}
+
+/* ── HEADER ── */
+.hdr{background:var(--navy);color:#fff;padding:0 32px;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:500;box-shadow:0 2px 20px rgba(0,0,0,0.25);}
+.brand{display:flex;align-items:center;gap:13px;cursor:pointer;text-decoration:none;color:inherit;}
+.brand-logo{width:40px;height:40px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.brand-name{font-family:'Playfair Display',serif;font-size:1.15rem;line-height:1.2;}
+.brand-name span{color:var(--gold-light);}
+.brand-sub{font-size:0.68rem;color:rgba(255,255,255,0.45);margin-top:1px;}
+.nav{display:flex;gap:3px;align-items:center;}
+.nl{color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.8rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:7px 12px;border-radius:6px;transition:all .18s;border:none;background:none;cursor:pointer;font-family:'Lato',sans-serif;}
+.nl:hover,.nl.on{background:rgba(201,168,76,.18);color:var(--gold-light);}
+.hamburger{display:none;background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;}
+
+/* ── PAGES ── */
+.pg{display:none;}.pg.on{display:block;}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 55%,#3a5299 100%);color:#fff;padding:52px 36px 60px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");}
+.hero-in{max-width:1060px;margin:0 auto;position:relative;}
+.eyebrow{font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold-light);font-weight:700;margin-bottom:10px;}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(1.9rem,5vw,3rem);line-height:1.12;margin-bottom:12px;}
+.hero h1 em{color:var(--gold-light);font-style:italic;}
+.hero p{color:rgba(255,255,255,.7);font-size:.97rem;max-width:520px;line-height:1.78;}
+.hero-stats{display:flex;gap:36px;margin-top:30px;flex-wrap:wrap;}
+.hs-v{font-family:'Playfair Display',serif;font-size:2rem;color:var(--gold-light);line-height:1;}
+.hs-l{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:3px;}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1060px;margin:0 auto;padding:40px 24px 72px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:800px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+@media(max-width:560px){.hdr{padding:0 16px;}.nav .nl:not(.nl-admin){display:none;}.hamburger{display:block;}}
+
+/* ── CARDS ── */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:26px;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);}
+.badge{background:var(--gold-light);color:var(--navy);font-size:.66rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;}
+.card-dark{background:linear-gradient(135deg,var(--navy),var(--navy-light));color:#fff;border-left:4px solid var(--gold);}
+.card-dark .card-title{color:var(--gold-light);}
+.sec-lbl{font-size:.66rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px;}
+
+/* ── PROGRESS ── */
+.prog-wrap{margin:4px 0 14px;}
+.prog-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.prog-lbl{font-size:.8rem;color:var(--muted);}
+.prog-val{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--navy);}
+.prog-track{background:#ece9e2;border-radius:99px;height:10px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--navy),var(--gold));transition:width 1.4s cubic-bezier(.4,0,.2,1);}
+.milestones{display:flex;justify-content:space-between;margin-top:7px;}
+.ms{text-align:center;font-size:.62rem;color:#bbb;flex:1;}
+.ms::before{content:'▲';display:block;font-size:6px;margin-bottom:1px;color:#ccc;}
+.ms.done{color:var(--navy);font-weight:700;}.ms.done::before{color:var(--gold);}
+.ms.now{color:var(--gold);font-weight:700;}.ms.now::before{color:var(--gold);}
+
+/* ── MAP ── */
+.map-wrap{border-radius:10px;overflow:hidden;box-shadow:var(--sh);}
+.map-controls{display:flex;gap:6px;padding:10px 14px;background:var(--white);border-bottom:1px solid #f0ece4;flex-wrap:wrap;}
+.map-btn{padding:5px 13px;border-radius:20px;border:2px solid #e0ddd6;background:var(--white);font-family:'Lato',sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--muted);}
+.map-btn:hover,.map-btn.on{border-color:var(--navy);background:var(--navy);color:#fff;}
+.map-legend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 14px;background:var(--white);border-top:1px solid #f0ece4;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:.75rem;font-weight:700;color:var(--navy);}
+.leg-dot{width:10px;height:10px;border-radius:50%;}
+
+/* ── POSTS ── */
+.post{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:24px;overflow:hidden;animation:fadeUp .4s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.post:nth-child(2){animation-delay:.08s;}.post:nth-child(3){animation-delay:.16s;}.post:nth-child(4){animation-delay:.24s;}
+.post-hd{padding:20px 24px 0;display:flex;gap:12px;align-items:flex-start;}
+.wk-badge{background:var(--navy);color:var(--gold-light);font-family:'Playfair Display',serif;font-size:.76rem;padding:4px 12px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.post-date{font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.post-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--navy);}
+.post-loc{font-size:.74rem;color:var(--gold);font-weight:700;margin-top:2px;}
+.post-body{padding:14px 24px 18px;font-size:.89rem;line-height:1.84;color:var(--text);}
+.post-body p{margin-bottom:11px;}.post-body p:last-child{margin-bottom:0;}
+.post-tags{padding:0 24px 14px;display:flex;gap:6px;flex-wrap:wrap;}
+.tag{background:#f0ece4;color:var(--navy);font-size:.68rem;font-weight:700;letter-spacing:.7px;text-transform:uppercase;padding:2px 8px;border-radius:4px;}
+.post-ft{border-top:1px solid #f4f1ea;padding:11px 24px;font-family:'Playfair Display',serif;font-style:italic;font-size:.82rem;color:var(--muted);}
+.post-ft span{font-style:normal;font-weight:700;color:var(--gold);font-size:.7rem;display:block;margin-top:1px;font-family:'Lato',sans-serif;}
+
+/* ── FILTER ── */
+.filter-bar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:26px;align-items:center;}
+.fi{flex:1;min-width:160px;border:2px solid #e0ddd6;border-radius:8px;padding:9px 13px;font-family:'Lato',sans-serif;font-size:.87rem;outline:none;background:var(--white);transition:border-color .2s;}
+.fi:focus{border-color:var(--gold);}
+.chip{padding:7px 14px;border-radius:20px;border:2px solid #e0ddd6;background:var(--white);font-family:'Lato',sans-serif;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--muted);}
+.chip:hover,.chip.on{border-color:var(--navy);background:var(--navy);color:#fff;}
+
+/* ── PHOTOS ── */
+.album-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;margin-top:30px;}
+.album-hd:first-of-type{margin-top:0;}
+.album-title{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--navy);}
+.album-date{font-size:.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.album-div{flex:1;height:1px;background:#e4e0d8;}
+.photo-grid{display:grid;gap:9px;}
+.ph{border-radius:9px;overflow:hidden;position:relative;cursor:pointer;transition:transform .2s,box-shadow .2s;}
+.ph:hover{transform:scale(1.025);box-shadow:0 12px 36px rgba(26,39,68,.22);z-index:2;}
+.ph-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.6rem;}
+.ph-cap{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(26,39,68,.88),transparent);padding:20px 13px 11px;opacity:0;transition:opacity .22s;}
+.ph:hover .ph-cap{opacity:1;}
+.ph-cap-t{color:#fff;font-family:'Playfair Display',serif;font-size:.9rem;}
+.ph-cap-d{color:var(--gold-light);font-size:.68rem;margin-top:2px;}
+
+/* Lightbox */
+.lb{display:none;position:fixed;inset:0;background:rgba(8,12,24,.94);z-index:2000;align-items:center;justify-content:center;}
+.lb.on{display:flex;}
+.lb-box{background:#fff;border-radius:12px;overflow:hidden;max-width:580px;width:92%;box-shadow:0 24px 80px rgba(0,0,0,.5);animation:lbIn .22s ease;}
+@keyframes lbIn{from{transform:scale(.94);opacity:0;}to{transform:scale(1);opacity:1;}}
+.lb-img{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:4.5rem;}
+.lb-info{padding:16px 20px 20px;}
+.lb-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--navy);}
+.lb-desc{font-size:.83rem;color:var(--muted);line-height:1.6;margin-top:3px;}
+.lb-close{position:absolute;top:16px;right:18px;background:rgba(255,255,255,.14);border:none;color:#fff;font-size:1.2rem;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .18s;}
+.lb-close:hover{background:rgba(255,255,255,.28);}
+
+/* ── ABOUT ── */
+.profile-hero{background:linear-gradient(135deg,var(--navy),var(--navy-light));padding:52px 36px;display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;}
+.avatar{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));border:5px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:4.5rem;box-shadow:0 12px 36px rgba(0,0,0,.3);flex-shrink:0;}
+.pi-name{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,5vw,2.7rem);color:#fff;line-height:1.1;margin-bottom:7px;}
+.pi-name em{color:var(--gold-light);font-style:italic;}
+.pi-sub{color:rgba(255,255,255,.68);line-height:1.7;margin-bottom:16px;font-size:.94rem;}
+.chips{display:flex;gap:7px;flex-wrap:wrap;}
+.chip-sm{background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.35);color:var(--gold-light);font-size:.74rem;font-weight:700;padding:3px 11px;border-radius:20px;}
+.facts-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+@media(max-width:660px){.facts-row{grid-template-columns:1fr 1fr;}}
+.fact{background:var(--white);border-radius:10px;padding:16px;text-align:center;box-shadow:var(--sh);}
+.fact-ico{font-size:1.5rem;margin-bottom:5px;}
+.fact-v{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--navy);line-height:1;}
+.fact-l{font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.testimony{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:var(--r);padding:34px;border-left:5px solid var(--gold);margin-bottom:24px;}
+.test-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold-light);margin-bottom:12px;}
+.test-text{font-family:'Playfair Display',serif;font-style:italic;font-size:1rem;line-height:1.85;color:rgba(255,255,255,.9);}
+.info-tbl{width:100%;border-collapse:collapse;}
+.info-tbl tr{border-bottom:1px solid #f0ece4;}.info-tbl tr:last-child{border-bottom:none;}
+.info-tbl td{padding:10px 4px;font-size:.84rem;vertical-align:top;}
+.info-tbl td:first-child{color:var(--muted);font-weight:700;width:38%;padding-right:10px;}
+.info-tbl td:last-child{color:var(--navy);}
+.tl{position:relative;padding-left:20px;}
+.tl::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:2px;background:#e0ddd6;}
+.tl-item{position:relative;margin-bottom:14px;}
+.tl-item::before{content:'';position:absolute;left:-18px;top:5px;width:9px;height:9px;border-radius:50%;background:#ccc;border:2px solid var(--white);box-shadow:0 0 0 2px #ccc;}
+.tl-item.done::before{background:var(--navy);box-shadow:0 0 0 2px var(--navy);}
+.tl-item.now::before{background:var(--gold);box-shadow:0 0 0 2px var(--gold);}
+.tl-date{font-size:.68rem;color:var(--muted);margin-bottom:1px;}
+.tl-text{font-size:.84rem;}
+.interests{display:flex;flex-wrap:wrap;gap:7px;}
+.interest{background:var(--cream);border:2px solid #e0ddd6;border-radius:7px;padding:6px 12px;font-size:.81rem;color:var(--navy);font-weight:700;}
+
+/* ── CONTACT ── */
+.fg{margin-bottom:14px;}
+label{display:block;font-size:.72rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--navy);margin-bottom:4px;}
+input,textarea,select{width:100%;padding:9px 12px;border:2px solid #e0ddd6;border-radius:8px;font-family:'Lato',sans-serif;font-size:.88rem;color:var(--text);background:var(--white);outline:none;transition:border-color .2s;appearance:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--gold);}
+textarea{resize:vertical;min-height:100px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:480px){.fr{grid-template-columns:1fr;}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:8px;border:none;font-family:'Lato',sans-serif;font-weight:700;font-size:.84rem;cursor:pointer;transition:all .2s;letter-spacing:.3px;}
+.bn{background:var(--navy);color:#fff;}.bn:hover{background:var(--navy-light);}
+.bg{background:var(--gold);color:var(--navy);}.bg:hover{background:var(--gold-light);}
+.bo{background:transparent;border:2px solid var(--navy);color:var(--navy);}.bo:hover{background:var(--navy);color:#fff;}
+.bfull{width:100%;justify-content:center;}
+.cm{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid #f0ece4;}
+.cm:last-child{border-bottom:none;}
+.cm-ico{width:40px;height:40px;border-radius:9px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.cm-t{font-weight:700;color:var(--navy);font-size:.86rem;margin-bottom:2px;}
+.cm-d{font-size:.78rem;color:var(--muted);line-height:1.5;}
+.cm-v{color:var(--gold);font-weight:700;font-size:.8rem;}
+.addr{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:var(--r);padding:24px;color:#fff;margin-top:20px;border-left:4px solid var(--gold);}
+.addr-t{font-family:'Playfair Display',serif;color:var(--gold-light);margin-bottom:9px;font-size:1rem;}
+.addr-body{font-family:'Playfair Display',serif;font-size:.97rem;line-height:1.9;color:rgba(255,255,255,.9);}
+.addr-note{font-size:.72rem;color:rgba(255,255,255,.45);margin-top:9px;line-height:1.6;}
+.success-msg{display:none;background:var(--green-bg);border:1px solid #a8d5b5;border-radius:8px;padding:12px;text-align:center;color:#1a5c2e;font-weight:700;font-size:.86rem;margin-top:9px;}
+.sub-strip{background:var(--gold);border-radius:var(--r);padding:22px 26px;margin-top:20px;}
+.sub-strip h3{font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:5px;}
+.sub-strip p{font-size:.8rem;color:rgba(26,39,68,.7);margin-bottom:12px;}
+.sub-form{display:flex;gap:7px;}
+.sub-form input{flex:1;border:none;padding:9px 12px;border-radius:7px;font-family:'Lato',sans-serif;font-size:.86rem;outline:none;}
+.sub-form button{background:var(--navy);color:#fff;border:none;padding:9px 16px;border-radius:7px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:.82rem;transition:background .2s;}
+.sub-form button:hover{background:var(--navy-light);}
+.quote-bar{text-align:center;padding:36px 20px;font-family:'Playfair Display',serif;font-style:italic;font-size:1rem;color:var(--navy);line-height:1.8;max-width:640px;margin:0 auto;}
+.q-ref{font-family:'Lato',sans-serif;font-style:normal;font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;display:block;margin-top:9px;}
+
+/* ── SUBSCRIBE BOX ── */
+.sub-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:var(--r);padding:34px;text-align:center;color:#fff;margin-top:44px;}
+.sub-box h3{font-family:'Playfair Display',serif;font-size:1.45rem;margin-bottom:7px;}
+.sub-box p{color:rgba(255,255,255,.68);font-size:.86rem;margin-bottom:18px;}
+.sub-box .sub-form{max-width:380px;margin:0 auto;}
+
+/* ── MOBILE DRAWER ── */
+.drawer{position:fixed;inset:0;z-index:800;display:none;}
+.drawer.on{display:block;}
+.drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.5);}
+.drawer-panel{position:absolute;top:0;right:0;width:250px;height:100%;background:var(--navy);padding:22px 20px;display:flex;flex-direction:column;gap:6px;animation:slideIn .24s ease;}
+@keyframes slideIn{from{transform:translateX(100%);}to{transform:translateX(0);}}
+.drawer-close{position:absolute;top:14px;right:14px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;}
+.drawer a{color:rgba(255,255,255,.8);text-decoration:none;font-size:.95rem;font-weight:700;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.1);display:block;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:10px 16px;border-radius:9px;font-weight:700;font-size:.83rem;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;display:flex;align-items:center;gap:6px;}
+.toast.on{transform:translateY(0);opacity:1;}
+
+/* ── FOOTER ── */
+footer{background:var(--navy);color:rgba(255,255,255,.4);text-align:center;font-size:.74rem;padding:20px;}
+footer strong{color:var(--gold-light);}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-cross">✝</div>
+  <div class="loader-text">Loading Elder Gledhill's Mission…</div>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <a class="brand" onclick="showPage('home')">
+    <div class="brand-logo">✝</div>
+    <div>
+      <div class="brand-name">Elder <span id="hdr-name">Gledhill's</span> Mission</div>
+      <div class="brand-sub" id="hdr-sub">Idaho Idaho Falls Mission</div>
+    </div>
+  </a>
+  <nav class="nav">
+    <button class="nl on" id="nl-home"    onclick="showPage('home')">Home</button>
+    <button class="nl"    id="nl-updates" onclick="showPage('updates')">Updates</button>
+    <button class="nl"    id="nl-photos"  onclick="showPage('photos')">Photos</button>
+    <button class="nl"    id="nl-about"   onclick="showPage('about')">About</button>
+    <button class="nl"    id="nl-contact" onclick="showPage('contact')">Contact</button>
+    <button class="hamburger" onclick="openDrawer()">☰</button>
+  </nav>
+</header>
+
+<!-- MOBILE DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-bg" onclick="closeDrawer()"></div>
+  <div class="drawer-panel">
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    <a href="#" onclick="showPage('home');closeDrawer()">🏠 Home</a>
+    <a href="#" onclick="showPage('updates');closeDrawer()">📝 Updates</a>
+    <a href="#" onclick="showPage('photos');closeDrawer()">📷 Photos</a>
+    <a href="#" onclick="showPage('about');closeDrawer()">👤 About</a>
+    <a href="#" onclick="showPage('contact');closeDrawer()">✉️ Contact</a>
+    <a href="admin.html" style="color:var(--gold-light);">⚙️ Admin</a>
+  </div>
+</div>
+
+<!-- ═══ HOME ═══ -->
+<div class="pg on" id="pg-home">
+  <div class="hero">
+    <div class="hero-in">
+      <div class="eyebrow" id="home-eyebrow">🌲 Currently Serving in Idaho Falls, Idaho</div>
+      <h1>Sharing the Gospel,<br><em>One Day at a Time</em></h1>
+      <p>Follow along as Elder Gledhill serves a two-year mission for The Church of Jesus Christ of Latter-day Saints in the Idaho Idaho Falls Mission.</p>
+      <div class="hero-stats">
+        <div><div class="hs-v" id="stat-months">14</div><div class="hs-l">Months Served</div></div>
+        <div><div class="hs-v" id="stat-remain">10</div><div class="hs-l">Months Remaining</div></div>
+        <div><div class="hs-v" id="stat-updates">47</div><div class="hs-l">Weekly Updates</div></div>
+        <div><div class="hs-v" id="stat-areas">3</div><div class="hs-l">Areas Served</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="g2" style="margin-bottom:24px;">
+      <!-- Progress -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">Mission Progress</div>
+          <div class="badge" id="prog-badge">58% Complete</div>
+        </div>
+        <div class="sec-lbl">Overall Mission Timeline</div>
+        <div class="prog-wrap">
+          <div class="prog-row"><span class="prog-lbl">Started: January 2024</span><span class="prog-val" id="prog-overall-lbl">14 / 24 mo.</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-overall" style="width:0%"></div></div>
+          <div class="milestones" id="milestones"></div>
+        </div>
+        <div class="sec-lbl" style="margin-top:16px;">Current Area — <span id="area-name">Idaho Falls West</span></div>
+        <div class="prog-wrap">
+          <div class="prog-track"><div class="prog-fill" id="prog-area" style="width:0%;background:linear-gradient(90deg,#2E3F6E,#C9A84C)"></div></div>
+        </div>
+        <div class="sec-lbl" style="margin-top:16px;">This Week's Goal</div>
+        <div class="prog-wrap">
+          <div class="prog-row"><span class="prog-lbl">Discussions taught</span><span class="prog-lbl" id="goal-lbl">8 of 12</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-goal" style="width:0%;background:linear-gradient(90deg,#2E3F6E,#3a9e6e)"></div></div>
+        </div>
+      </div>
+
+      <!-- Map preview -->
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:16px 18px 12px;">
+          <div class="card-hd" style="margin-bottom:0;">
+            <div class="card-title">Mission Map</div>
+            <div class="badge" id="map-badge">Idaho Falls Mission</div>
+          </div>
+        </div>
+        <div class="map-controls">
+          <button class="map-btn on" onclick="setLayer('road',this)">🗺 Road</button>
+          <button class="map-btn" onclick="setLayer('satellite',this)">🛰 Satellite</button>
+          <button class="map-btn" onclick="setLayer('topo',this)">🏔 Terrain</button>
+        </div>
+        <div id="home-map" style="height:280px;z-index:1;"></div>
+        <div class="map-legend" id="map-legend-home"></div>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-bottom:24px;">
+      <!-- Latest update -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">Latest Update</div>
+          <div class="badge" id="latest-badge">Week 47</div>
+        </div>
+        <div style="font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;" id="latest-date">March 24, 2025</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);margin-bottom:10px;" id="latest-title">A Family That Changed Everything</div>
+        <div style="font-size:.87rem;line-height:1.78;color:var(--text);" id="latest-excerpt">Loading…</div>
+        <button class="btn bn" style="margin-top:14px;" onclick="showPage('updates')">📝 Read Full Update</button>
+      </div>
+      <!-- Verse + Timeline -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card card-dark">
+          <div class="card-title">This Week's Scripture</div>
+          <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:.98rem;line-height:1.75;color:rgba(255,255,255,.9);margin:12px 0;" id="verse-text">"Loading…"</div>
+          <div style="font-size:.74rem;color:var(--gold-light);font-weight:700;letter-spacing:1px;" id="verse-ref">Loading…</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px;">Mission Timeline</div>
+          <div class="tl" id="home-timeline"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photos strip + Contact -->
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd"><div class="card-title">Recent Photos</div><div class="badge">Latest</div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;" id="home-photos-grid"></div>
+        <button class="btn bo" style="margin-top:12px;width:100%;" onclick="showPage('photos')">📷 View All Photos</button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <div class="card-hd"><div class="card-title">Stay Connected</div></div>
+          <p style="font-size:.84rem;color:var(--muted);line-height:1.65;margin-bottom:14px;">Letters and emails mean the world to missionaries. Send Elder Gledhill a word of support — he reads every one!</p>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <button class="btn bn bfull" onclick="showPage('contact')">✉️ Send a Letter</button>
+            <button class="btn bo bfull" onclick="showPage('contact')">🔔 Subscribe to Updates</button>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:13px;border-top:1px solid #eee;">
+          <div class="sec-lbl">Mission Info</div>
+          <p id="home-mission-info" style="font-size:.78rem;color:var(--muted);line-height:1.75;">Loading…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><p>Made with ❤️ for <strong id="footer-name">Elder Michael Gledhill</strong> · Idaho Idaho Falls Mission · The Church of Jesus Christ of Latter-day Saints</p><p style="margin-top:4px;">© 2025 · Updated every Monday · <a href="admin.html" style="color:var(--gold-light);">Admin</a></p></footer>
+</div>
+
+<!-- ═══ UPDATES ═══ -->
+<div class="pg" id="pg-updates">
+  <div class="hero">
+    <div class="hero-in">
+      <div class="eyebrow">📝 Weekly Letters Home</div>
+      <h1>Mission <em>Updates</em></h1>
+      <p>Every week Elder Gledhill shares what he's learning, the people he's meeting, and the miracles happening in the Idaho Falls Mission.</p>
+    </div>
+  </div>
+  <div class="wrap" style="max-width:800px;">
+    <div class="filter-bar">
+      <input class="fi" type="text" placeholder="🔍 Search updates…" oninput="filterPosts(this.value)">
+      <button class="chip on" onclick="filterChip(this,'all')">All</button>
+      <button class="chip"    onclick="filterChip(this,'2025')">2025</button>
+      <button class="chip"    onclick="filterChip(this,'2024')">2024</button>
+    </div>
+    <div id="posts-container"></div>
+    <div class="sub-box">
+      <h3>Never Miss an Update ✉️</h3>
+      <p>Get Elder Gledhill's weekly letter delivered straight to your inbox every Monday morning.</p>
+      <div class="sub-form"><input type="email" id="sub-upd" placeholder="your@email.com"><button onclick="subscribe('sub-upd')">Subscribe</button></div>
+    </div>
+  </div>
+  <footer><p><strong id="footer-name-upd">Elder Michael Gledhill</strong> · Idaho Falls Mission · Updated every Monday</p></footer>
+</div>
+
+<!-- ═══ PHOTOS ═══ -->
+<div class="pg" id="pg-photos">
+  <div class="hero">
+    <div class="hero-in">
+      <div class="eyebrow">📷 Mission Memories</div>
+      <h1>Photo <em>Gallery</em></h1>
+      <p>Snapshots from Elder Gledhill's mission in Idaho — the people, places, and moments that make up two years of service.</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div style="display:flex;gap:7px;margin-bottom:28px;flex-wrap:wrap;">
+      <button class="chip on" onclick="filterPhotos('all',this)">All Photos</button>
+      <button class="chip" onclick="filterPhotos('March 2025',this)">March 2025</button>
+      <button class="chip" onclick="filterPhotos('Early 2025',this)">Early 2025</button>
+      <button class="chip" onclick="filterPhotos('2024',this)">2024</button>
+    </div>
+    <div id="photo-albums"></div>
+  </div>
+  <div class="lb" id="lb" onclick="closeLb(event)">
+    <button class="lb-close" onclick="closeLb()">✕</button>
+    <div class="lb-box">
+      <div class="lb-img" id="lb-img"></div>
+      <div class="lb-info"><div class="lb-title" id="lb-title"></div><div class="lb-desc" id="lb-desc"></div></div>
+    </div>
+  </div>
+  <footer><p><strong>Elder Gledhill's Mission</strong> · Idaho Falls Mission</p></footer>
+</div>
+
+<!-- ═══ ABOUT ═══ -->
+<div class="pg" id="pg-about">
+  <div class="profile-hero">
+    <div class="avatar">👤</div>
+    <div>
+      <div class="eyebrow">🙏 Servant of the Lord</div>
+      <div class="pi-name">Elder <em id="about-name">Michael</em><br>Gledhill</div>
+      <div class="pi-sub" id="about-sub">Serving a full-time mission for The Church of Jesus Christ of Latter-day Saints.</div>
+      <div class="chips" id="about-chips"></div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="facts-row" id="about-facts"></div>
+    <div class="g2" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">My Story 📖</div>
+        <div style="font-size:.88rem;line-height:1.82;color:var(--text);margin-top:10px;" id="about-bio"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Mission Details ✝</div>
+        <table class="info-tbl" style="margin-top:10px;" id="about-table"></table>
+      </div>
+    </div>
+    <div class="testimony">
+      <div class="test-title">My Testimony</div>
+      <div class="test-text" id="about-testimony"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">Hobbies &amp; Interests 🏡</div>
+      <div class="interests" id="about-hobbies"></div>
+    </div>
+  </div>
+  <footer><p><strong>Elder Gledhill's Mission</strong> · Idaho Falls Mission</p></footer>
+</div>
+
+<!-- ═══ CONTACT ═══ -->
+<div class="pg" id="pg-contact">
+  <div class="hero">
+    <div class="hero-in">
+      <div class="eyebrow">✉️ Reach Out</div>
+      <h1>Contact &amp; <em>Letters</em></h1>
+      <p>Letters from home mean the world to missionaries. Send Elder Gledhill a message of support, a scripture, or just let him know you're thinking of him!</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="g2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:4px;">Send a Message 💌</div>
+        <p style="font-size:.78rem;color:var(--muted);margin-bottom:16px;">Fill out the form — your message will reach Elder Gledhill through his family.</p>
+        <div class="fr">
+          <div class="fg"><label>First Name</label><input id="cf-first" placeholder="Jane"></div>
+          <div class="fg"><label>Last Name</label><input id="cf-last" placeholder="Smith"></div>
+        </div>
+        <div class="fg"><label>Email</label><input type="email" id="cf-email" placeholder="jane@example.com"></div>
+        <div class="fg"><label>How do you know Elder Gledhill?</label>
+          <select id="cf-how"><option value="">— Select —</option><option>Family member</option><option>Friend from home</option><option>Friend from school</option><option>Ward member</option><option>Found this site online</option><option>Other</option></select>
+        </div>
+        <div class="fg"><label>Your Message</label><textarea id="cf-msg" placeholder="Write your encouragement, scripture, or update here…"></textarea></div>
+        <div class="fg"><label>Would you like a reply?</label>
+          <select><option>Yes, please!</option><option>No, just wanted to send love 🙏</option></select>
+        </div>
+        <button class="btn bn bfull" onclick="submitContact()" style="margin-top:4px;">✉️ Send My Message</button>
+        <div class="success-msg" id="contact-success">🎉 Message sent! Elder Gledhill's family will forward it to him.</div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px;">Other Ways to Connect</div>
+          <div class="cm"><div class="cm-ico">📧</div><div><div class="cm-t">Email (Preferred — Mondays only)</div><div class="cm-d">Missionaries can receive and send emails on Preparation Day only.</div><div class="cm-v" id="contact-email">mgledhill@missionary.org</div></div></div>
+          <div class="cm"><div class="cm-ico">📮</div><div><div class="cm-t">Physical Mail</div><div class="cm-d">Letters and cards to the mission home. Allow 1–2 weeks.</div><div class="cm-v">See address below →</div></div></div>
+          <div class="cm"><div class="cm-ico">📞</div><div><div class="cm-t">Phone / Video Calls</div><div class="cm-d">Elder Gledhill can call home on <b>Christmas and Mother's Day</b> only.</div></div></div>
+          <div class="cm"><div class="cm-ico">📦</div><div><div class="cm-t">Care Packages</div><div class="cm-d">Contact the Gledhill family first to coordinate. Some restrictions apply.</div></div></div>
+        </div>
+        <div class="addr">
+          <div class="addr-t">📮 Mailing Address</div>
+          <div class="addr-body">Elder <span id="contact-name">Michael Gledhill</span><br>Idaho Idaho Falls Mission<br>3350 Merlin Drive<br>Idaho Falls, ID 83404<br>United States</div>
+          <div class="addr-note">Write "Elder Gledhill – Missionary Mail" on the envelope. Include your return address so he can write back!</div>
+        </div>
+        <div class="sub-strip">
+          <h3>🔔 Get Weekly Updates</h3>
+          <p>Elder Gledhill's letter delivered to your inbox every Monday.</p>
+          <div class="sub-form"><input type="email" id="sub-contact" placeholder="your@email.com"><button onclick="subscribe('sub-contact')">Subscribe</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="quote-bar">"And now, my beloved brethren, I know by this that unless a man shall endure to the end, in following the example of the Son of the living God, he cannot be saved."<span class="q-ref">— 2 Nephi 31:16</span></div>
+  </div>
+  <footer><p><strong>Elder Gledhill's Mission</strong> · Maintained by the Gledhill family · <a href="admin.html" style="color:var(--gold-light);">Admin</a></p></footer>
+</div>
+
+<div class="toast" id="toast">✅ Done!</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG — set your GitHub repo info here
+// ═══════════════════════════════════════════
+const GITHUB_USER = 'your-username';   // ← change this
+const GITHUB_REPO = 'mission-site';    // ← change this
+const DATA_PATH   = 'data.json';
+
+// ═══════════════════════════════════════════
+// LOAD DATA from GitHub raw or local fallback
+// ═══════════════════════════════════════════
+let D = null; // global data
+
+async function loadData() {
+  try {
+    // Try GitHub raw first (works when hosted on GitHub Pages)
+    const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${DATA_PATH}?t=${Date.now()}`;
+    const res = await fetch(url);
+    if (res.ok) { D = await res.json(); }
+    else { throw new Error('GitHub fetch failed'); }
+  } catch {
+    try {
+      // Fallback to local data.json (for local dev)
+      const res = await fetch(DATA_PATH + '?t=' + Date.now());
+      if (res.ok) { D = await res.json(); }
+      else { throw new Error('Local fetch failed'); }
+    } catch {
+      toast('⚠️ Could not load data — using defaults', '#c0392b');
+      D = getDefaultData();
+    }
+  }
+  renderAll();
+  document.getElementById('loader').classList.add('gone');
+}
+
+// ═══════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════
+function renderAll() {
+  renderHeader();
+  renderHome();
+  renderPosts();
+  renderPhotos();
+  renderAbout();
+  renderContact();
+  setTimeout(initHomeMap, 400);
+}
+
+function renderHeader() {
+  const m = D.missionary;
+  document.getElementById('hdr-name').textContent = m.lastName + "'s";
+  document.getElementById('hdr-sub').textContent  = m.missionName;
+}
+
+function renderHome() {
+  const m = D.missionary, s = D.stats, sc = D.scripture;
+  // Stats
+  document.getElementById('stat-months').textContent  = s.monthsServed;
+  document.getElementById('stat-remain').textContent  = s.monthsTotal - s.monthsServed;
+  document.getElementById('stat-updates').textContent = s.weeklyUpdates;
+  document.getElementById('stat-areas').textContent   = s.areasServed;
+  document.getElementById('home-eyebrow').textContent = '🌲 Currently Serving in ' + D.location.city + ', ' + D.location.state;
+  // Progress bars (animate in)
+  setTimeout(()=>{
+    document.getElementById('prog-overall').style.width = s.overallProgress + '%';
+    document.getElementById('prog-area').style.width    = s.areaProgress + '%';
+    document.getElementById('prog-goal').style.width    = Math.round(s.weeklyGoalDiscussions / s.weeklyGoalTarget * 100) + '%';
+  }, 300);
+  document.getElementById('prog-badge').textContent      = s.overallProgress + '% Complete';
+  document.getElementById('prog-overall-lbl').textContent = s.monthsServed + ' / ' + s.monthsTotal + ' mo.';
+  document.getElementById('area-name').textContent       = D.location.areaDescription;
+  document.getElementById('goal-lbl').textContent        = s.weeklyGoalDiscussions + ' of ' + s.weeklyGoalTarget;
+  // Milestones
+  const mstones = ['MTC\nJan \'24','6 mo.\nJul \'24','1 Year\nJan \'25','18 mo.\nJul \'25','Done!\nJan \'26'];
+  const mPct = [0, 25, 50, 75, 100];
+  document.getElementById('milestones').innerHTML = mstones.map((t,i) => {
+    const pct = mPct[i]; const cls = pct < s.overallProgress ? 'done' : pct === 50 ? 'now' : '';
+    return `<div class="ms ${cls}">${t.replace('\n','<br>')}</div>`;
+  }).join('');
+  // Scripture
+  document.getElementById('verse-text').textContent = '"' + sc.text + '"';
+  document.getElementById('verse-ref').textContent  = '— ' + sc.reference;
+  // Timeline
+  document.getElementById('home-timeline').innerHTML = D.timeline.map(t =>
+    `<div class="tl-item ${t.status}"><div class="tl-date">${t.date}</div><div class="tl-text">${t.event}</div></div>`
+  ).join('');
+  // Latest post
+  if (D.posts.length) {
+    const p = D.posts[0];
+    document.getElementById('latest-badge').textContent   = 'Week ' + p.week;
+    document.getElementById('latest-date').textContent    = p.date;
+    document.getElementById('latest-title').textContent   = p.title;
+    document.getElementById('latest-excerpt').textContent = p.body.replace(/\n/g,' ').slice(0, 180) + '…';
+  }
+  // Home photos grid (first 6)
+  const pg = document.getElementById('home-photos-grid');
+  pg.innerHTML = D.photos.slice(0,6).map(ph =>
+    `<div style="aspect-ratio:1;border-radius:7px;background:${ph.bg};display:flex;align-items:center;justify-content:center;font-size:1.7rem;cursor:pointer;" onclick="showPage('photos')">${ph.emoji}</div>`
+  ).join('');
+  // Footer
+  document.getElementById('footer-name').textContent = 'Elder ' + m.firstName + ' ' + m.lastName;
+  // Mission info
+  document.getElementById('home-mission-info').innerHTML =
+    `🌲 <b>${m.missionName}</b><br>📅 ${new Date(m.startDate).getFullYear()} – ${new Date(m.endDate).getFullYear()}<br>⛪ The Church of Jesus Christ<br>&nbsp;&nbsp;&nbsp;of Latter-day Saints`;
+}
+
+function renderPosts(filter='') {
+  const c = document.getElementById('posts-container');
+  let posts = D.posts.filter(p =>
+    !filter || p.title.toLowerCase().includes(filter) || p.body.toLowerCase().includes(filter) ||
+    p.date.toLowerCase().includes(filter) || (p.tags||[]).some(t=>t.toLowerCase().includes(filter))
+  );
+  if (!posts.length) { c.innerHTML = '<p style="color:var(--muted);padding:20px 0;text-align:center;">No updates found.</p>'; return; }
+  c.innerHTML = posts.map(p => `
+    <article class="post">
+      <div class="post-hd">
+        <div class="wk-badge">Week ${p.week}</div>
+        <div>
+          <div class="post-date">${p.date}</div>
+          <div class="post-title">${p.title}</div>
+          <div class="post-loc">📍 ${p.location}</div>
+        </div>
+      </div>
+      <div class="post-body">${p.body.split('\n\n').map(par=>`<p>${par.replace(/\n/g,'<br>')}</p>`).join('')}</div>
+      ${p.tags&&p.tags.length?`<div class="post-tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
+      <div class="post-ft">"${p.scripture}"<span>${p.scriptureRef}</span></div>
+    </article>`
+  ).join('');
+  document.getElementById('footer-name-upd').textContent = 'Elder ' + D.missionary.firstName + ' ' + D.missionary.lastName;
+}
+
+function renderPhotos(albumFilter='all') {
+  const c = document.getElementById('photo-albums');
+  const photos = albumFilter === 'all' ? D.photos : D.photos.filter(p => p.album.includes(albumFilter));
+  const albums = [...new Set(photos.map(p=>p.album))];
+  const grids = { 'March 2025':'pg-a', 'Early 2025':'pg-b', '2024':'pg-c' };
+  const styles = { 'March 2025':'grid-template-columns:2fr 1fr 1fr;grid-template-rows:210px 210px;', 'Early 2025':'grid-template-columns:1fr 1fr 1fr 1fr;grid-template-rows:190px;', '2024':'grid-template-columns:1fr 1fr 2fr;grid-template-rows:210px 210px;' };
+  c.innerHTML = albums.map(alb => {
+    const ps = photos.filter(p=>p.album===alb);
+    const style = styles[alb] || 'grid-template-columns:repeat(3,1fr);grid-template-rows:200px;';
+    return `
+      <div class="album-hd"><div class="album-title">${alb}</div><div class="album-date">${ps.length} photos</div><div class="album-div"></div></div>
+      <div class="photo-grid" style="gap:9px;${style};margin-bottom:8px;">
+        ${ps.map(p=>`
+          <div class="ph ${p.span||''}" style="background:${p.bg};" onclick="openLb('${p.emoji}','${p.title}','${p.desc}','${p.date}','${p.bg}')">
+            <div class="ph-inner">${p.emoji}</div>
+            <div class="ph-cap"><div class="ph-cap-t">${p.title}</div><div class="ph-cap-d">${p.date}</div></div>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+}
+
+function renderAbout() {
+  const m = D.missionary;
+  document.getElementById('about-name').textContent = m.firstName;
+  document.getElementById('about-sub').textContent  = `Serving in the ${m.missionName} since ${new Date(m.startDate).toLocaleDateString('en-US',{month:'long',year:'numeric'})}.`;
+  document.getElementById('about-chips').innerHTML  = [
+    '📍 ' + D.location.city + ', ' + D.location.state,
+    '🗓 ' + new Date(m.startDate).getFullYear() + ' – ' + new Date(m.endDate).getFullYear(),
+    '✝ LDS Missionary'
+  ].map(c=>`<span class="chip-sm">${c}</span>`).join('');
+  document.getElementById('about-facts').innerHTML = [
+    {ico:'🏠',v:m.hometown,l:'Hometown'},
+    {ico:'🎂',v:m.age,l:'Years Old'},
+    {ico:'📚',v:m.collegePlans.split('—')[0].trim(),l:'College Plans'},
+    {ico:'⛪',v:'Lifelong',l:'Church Member'}
+  ].map(f=>`<div class="fact"><div class="fact-ico">${f.ico}</div><div class="fact-v">${f.v}</div><div class="fact-l">${f.l}</div></div>`).join('');
+  document.getElementById('about-bio').innerHTML = m.bio.split('\n').map(p=>`<p style="margin-bottom:11px;">${p}</p>`).join('');
+  document.getElementById('about-testimony').textContent = m.testimony;
+  document.getElementById('about-table').innerHTML = [
+    ['Mission', m.missionName],
+    ['Mission President', m.missionPresident],
+    ['Start Date', new Date(m.startDate).toLocaleDateString('en-US',{year:'numeric',month:'long'})],
+    ['End Date', new Date(m.endDate).toLocaleDateString('en-US',{year:'numeric',month:'long'})],
+    ['Current Area', D.location.areaDescription],
+    ['Current Companion', m.currentCompanion],
+  ].map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+  document.getElementById('about-hobbies').innerHTML = m.hobbies.map(h=>`<span class="interest">${h}</span>`).join('');
+}
+
+function renderContact() {
+  document.getElementById('contact-name').textContent = D.missionary.firstName + ' ' + D.missionary.lastName;
+}
+
+// ═══════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════
+let homeMap=null, currentLayer=null;
+const layers = {
+  road: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO',maxZoom:14}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:14}),
+  topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap, © OpenTopoMap',maxZoom:14})
+};
+
+function initHomeMap() {
+  if (homeMap || !D) return;
+  const el = document.getElementById('home-map');
+  if (!el) return;
+  homeMap = L.map('home-map',{zoomControl:true,scrollWheelZoom:false,attributionControl:false});
+  currentLayer = layers.road.addTo(homeMap);
+  addMapContent(homeMap);
+  homeMap.setView([43.6,-112.2],7);
+  // Legend
+  const areas = D.mapBoundaries.areas;
+  document.getElementById('map-legend-home').innerHTML =
+    areas.map(a=>`<div class="leg-item"><div class="leg-dot" style="background:${areaColor(a.status)}"></div>${a.name} <span style="font-size:.65rem;font-weight:400;color:var(--muted);">${a.status}</span></div>`).join('') +
+    `<div class="leg-item"><div class="leg-dot" style="background:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.3);"></div>Current</div>`;
+}
+
+function addMapContent(map) {
+  const mb = D.mapBoundaries;
+  // Mission boundary
+  if (mb.missionBoundary && mb.missionBoundary.length) {
+    L.polygon(mb.missionBoundary,{color:'#1A2744',weight:2.5,fillColor:'rgba(201,168,76,0.1)',fillOpacity:1,dashArray:'6,4'}).addTo(map);
+  }
+  // Area boundaries
+  mb.areas.forEach(area => {
+    if (area.boundary && area.boundary.length > 2) {
+      L.polygon(area.boundary,{color:areaColor(area.status),weight:2,fillColor:areaColor(area.status),fillOpacity:0.15}).addTo(map);
+    }
+    const icon = area.status==='current' ? makeCurrentIcon() : makeAreaIcon(areaColor(area.status));
+    const m = L.marker([area.lat,area.lng],{icon}).addTo(map);
+    const badge = area.status==='current'
+      ? `<span style="background:#fff3cd;color:#856404;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:9px;margin-top:5px;display:inline-block;">📍 Current</span>`
+      : area.status==='completed'
+      ? `<span style="background:#d4edda;color:#155724;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:9px;margin-top:5px;display:inline-block;">✅ ${area.startDate} – ${area.endDate}</span>` : '';
+    m.bindPopup(`<div style="font-family:'Playfair Display',serif;font-size:1rem;color:#1A2744;margin-bottom:3px;">${area.name}</div>${badge}`,{maxWidth:200});
+  });
+  // Cities
+  mb.cities.forEach(c => {
+    const icon = L.divIcon({html:`<div style="width:7px;height:7px;border-radius:50%;background:#2E3F6E;border:1.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>`,iconSize:[7,7],iconAnchor:[3,3],className:''});
+    L.marker([c.lat,c.lng],{icon}).addTo(map).bindPopup(`<b>${c.name}</b>`,{maxWidth:120});
+  });
+  // Current location pulse
+  const loc = D.location;
+  L.marker([loc.lat,loc.lng],{icon:makeCurrentIcon(),zIndexOffset:1000}).addTo(map)
+    .bindPopup(`<div style="font-family:'Playfair Display',serif;font-size:1rem;color:#1A2744;">📍 ${loc.city}</div><div style="font-size:.78rem;color:#666;margin-top:3px;">${loc.areaDescription}</div>`)
+    .openPopup();
+}
+
+function setLayer(type, btn) {
+  if (!homeMap) return;
+  document.querySelectorAll('.map-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  homeMap.removeLayer(currentLayer);
+  currentLayer = layers[type].addTo(homeMap);
+}
+
+function areaColor(status) {
+  return status==='current' ? '#C9A84C' : status==='completed' ? '#2a7a4a' : '#9ca3af';
+}
+function makeCurrentIcon() {
+  return L.divIcon({html:`<div style="width:22px;height:22px;border-radius:50%;background:#C9A84C;border:3px solid white;box-shadow:0 3px 12px rgba(0,0,0,.4);animation:mpulse 2s infinite;"></div><style>@keyframes mpulse{0%,100%{box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 0 rgba(201,168,76,.5);}60%{box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 10px rgba(201,168,76,0);}}</style>`,iconSize:[22,22],iconAnchor:[11,11],className:''});
+}
+function makeAreaIcon(color) {
+  return L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 7px rgba(0,0,0,.3);"></div>`,iconSize:[14,14],iconAnchor:[7,7],className:''});
+}
+
+// ═══════════════════════════════════════════
+// FILTER POSTS
+// ═══════════════════════════════════════════
+function filterPosts(v){ renderPosts(v.toLowerCase()); }
+function filterChip(el,k){
+  document.querySelectorAll('#pg-updates .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderPosts(k==='all'?'':k);
+}
+function filterPhotos(alb,el){
+  document.querySelectorAll('#pg-photos .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderPhotos(alb);
+}
+
+// ═══════════════════════════════════════════
+// LIGHTBOX
+// ═══════════════════════════════════════════
+function openLb(emoji,title,desc,date,bg){
+  document.getElementById('lb-img').style.background=bg;
+  document.getElementById('lb-img').textContent=emoji;
+  document.getElementById('lb-title').textContent=title;
+  document.getElementById('lb-desc').textContent=desc+' · '+date;
+  document.getElementById('lb').classList.add('on');
+}
+function closeLb(e){
+  if(!e||e.target===document.getElementById('lb')||e.target.classList.contains('lb-close'))
+    document.getElementById('lb').classList.remove('on');
+}
+
+// ═══════════════════════════════════════════
+// CONTACT / SUBSCRIBE
+// ═══════════════════════════════════════════
+function submitContact(){
+  const first=document.getElementById('cf-first').value.trim();
+  const msg=document.getElementById('cf-msg').value.trim();
+  if(!first||!msg){toast('Please fill in your name and message','#c0392b');return;}
+  document.getElementById('contact-success').style.display='block';
+  setTimeout(()=>document.getElementById('contact-success').style.display='none',5000);
+  toast('Message sent! 💌');
+}
+function subscribe(id){
+  const v=document.getElementById(id).value.trim();
+  if(!v||!v.includes('@')){toast('Please enter a valid email','#c0392b');return;}
+  document.getElementById(id).value='';
+  toast('Subscribed! 🎉 You\'ll get updates every Monday.');
+}
+
+// ═══════════════════════════════════════════
+// PAGE NAV
+// ═══════════════════════════════════════════
+function showPage(name){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pg-'+name).classList.add('on');
+  document.querySelectorAll('.nl').forEach(n=>n.classList.remove('on'));
+  const btn=document.getElementById('nl-'+name);
+  if(btn) btn.classList.add('on');
+  window.scrollTo(0,0);
+  if(name==='home') setTimeout(initHomeMap,300);
+  if(name==='updates') renderPosts();
+  if(name==='photos') renderPhotos();
+}
+
+// ═══════════════════════════════════════════
+// DRAWER
+// ═══════════════════════════════════════════
+function openDrawer(){document.getElementById('drawer').classList.add('on');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('on');}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function toast(msg,color='#2a7a4a'){
+  clearTimeout(toastTimer);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=color;
+  t.classList.add('on');
+  toastTimer=setTimeout(()=>t.classList.remove('on'),3200);
+}
+
+// ═══════════════════════════════════════════
+// DEFAULT DATA fallback
+// ═══════════════════════════════════════════
+function getDefaultData(){
+  return {missionary:{firstName:'Michael',lastName:'Gledhill',hometown:'American Fork, Utah',age:21,missionName:'Idaho Idaho Falls Mission',missionPresident:'President & Sister Harmon',startDate:'2024-01-08',endDate:'2026-01-08',currentCompanion:'Elder Christensen',currentArea:'Idaho Falls West',bio:'Loading…',testimony:'Loading…',hobbies:['Loading'],collegePlans:'BYU-Idaho'},stats:{monthsServed:14,monthsTotal:24,weeklyUpdates:47,areasServed:3,overallProgress:58,areaProgress:50,weeklyGoalDiscussions:8,weeklyGoalTarget:12,subscribers:124},location:{city:'Idaho Falls',state:'Idaho',lat:43.4917,lng:-112.0339,areaDescription:'Idaho Falls West Area'},scripture:{text:'Loading…',reference:'Loading…'},mapBoundaries:{missionBoundary:[],areas:[],cities:[]},timeline:[],posts:[],photos:[],messages:[],subscribers:[]};
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+loadData();
+</script>
+</body>
+</html>

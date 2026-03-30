@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Elder Gledhill's Mission</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<style>
+:root{
+  --gold:#C9A84C;--gold-light:#F0D898;--gold-dim:rgba(201,168,76,.15);
+  --navy:#1A2744;--navy-mid:#243256;--navy-light:#2E3F6E;
+  --cream:#FAF6EE;--white:#fff;--text:#2C2C2C;--muted:#6b7280;
+  --green:#2a7a4a;--green-bg:#d4edda;--red:#c0392b;--red-bg:#fdecea;
+  --sb:240px;--r:12px;--sh:0 4px 24px rgba(26,39,68,.11);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Lato',sans-serif;background:#eeece8;color:var(--text);min-height:100vh;display:flex;}
+
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-screen.gone{display:none;}
+.login-box{background:var(--white);border-radius:16px;padding:38px;width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+.login-logo{width:54px;height:54px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 13px;}
+.login-box h2{font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:5px;}
+.login-box p{font-size:.78rem;color:var(--muted);margin-bottom:18px;}
+.login-hint{font-size:.68rem;color:#bbb;margin-top:10px;}
+.login-err{color:var(--red);font-size:.76rem;margin-top:6px;display:none;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sb);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:200;overflow-y:auto;transform:translateX(-100%);transition:transform .3s;}
+body.authed .sidebar{transform:translateX(0);}
+.sb-brand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-logo{width:36px;height:36px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:8px;}
+.sb-title{font-family:'Playfair Display',serif;color:#fff;font-size:.9rem;line-height:1.3;}
+.sb-title span{color:var(--gold-light);}
+.sb-sub{font-size:.62rem;color:rgba(255,255,255,.3);margin-top:2px;}
+.sb-section{padding:12px 10px 3px;font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.28);font-weight:700;}
+.si{display:flex;align-items:center;gap:8px;padding:8px 17px;cursor:pointer;color:rgba(255,255,255,.58);font-size:.82rem;font-weight:700;transition:all .16s;border-left:3px solid transparent;background:none;border-top:none;border-right:none;border-bottom:none;width:100%;text-align:left;font-family:'Lato',sans-serif;}
+.si:hover{background:rgba(255,255,255,.05);color:#fff;}
+.si.on{background:rgba(201,168,76,.14);color:var(--gold-light);border-left-color:var(--gold);}
+.si-ico{font-size:.9rem;width:17px;text-align:center;flex-shrink:0;}
+.sb-footer{margin-top:auto;padding:13px 15px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px;}
+.sb-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border-radius:7px;font-weight:700;font-size:.76rem;cursor:pointer;border:none;font-family:'Lato',sans-serif;transition:background .18s;}
+.sb-preview{background:var(--gold);color:var(--navy);}.sb-preview:hover{background:var(--gold-light);}
+.sb-close{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);}.sb-close:hover{background:rgba(255,255,255,.14);color:#fff;}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sb);flex:1;display:flex;flex-direction:column;min-height:100vh;width:calc(100% - var(--sb));}
+body.authed .main{display:flex;}
+body:not(.authed) .main{display:none;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--white);padding:0 26px;height:58px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 0 #e8e4de;position:sticky;top:0;z-index:100;}
+.topbar-title{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);}
+.topbar-right{display:flex;gap:7px;align-items:center;}
+.github-status{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;background:var(--cream);}
+.github-status.ok{color:var(--green);background:var(--green-bg);}
+.github-status.err{color:var(--red);background:var(--red-bg);}
+
+/* ── CONTENT ── */
+.content{padding:26px;flex:1;overflow-y:auto;}
+.apanel{display:none;}.apanel.on{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:24px;margin-bottom:18px;}
+.card-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--navy);margin-bottom:3px;}
+.card-desc{font-size:.74rem;color:var(--muted);margin-bottom:14px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:780px){.g2,.g3{grid-template-columns:1fr;}}
+
+/* ── FORMS ── */
+.fg{margin-bottom:14px;}
+.fg:last-child{margin-bottom:0;}
+label{display:block;font-size:.7rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--navy);margin-bottom:4px;}
+input,textarea,select{width:100%;padding:9px 12px;border:2px solid #e0ddd6;border-radius:7px;font-family:'Lato',sans-serif;font-size:.87rem;color:var(--text);background:var(--white);outline:none;transition:border-color .2s;appearance:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--gold);}
+textarea{resize:vertical;min-height:90px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+@media(max-width:540px){.fr,.fr3{grid-template-columns:1fr;}}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:7px;border:none;font-family:'Lato',sans-serif;font-weight:700;font-size:.81rem;cursor:pointer;transition:all .18s;letter-spacing:.3px;}
+.bn{background:var(--navy);color:#fff;}.bn:hover{background:var(--navy-light);}
+.bg{background:var(--gold);color:var(--navy);}.bg:hover{background:var(--gold-light);}
+.br{background:var(--red-bg);color:var(--red);}.br:hover{background:var(--red);color:#fff;}
+.bfull{width:100%;justify-content:center;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── GITHUB PUSH BTN ── */
+.push-btn{background:linear-gradient(135deg,#24292e,#444d56);color:#fff;border:none;padding:9px 18px;border-radius:7px;font-family:'Lato',sans-serif;font-weight:700;font-size:.81rem;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .18s;}
+.push-btn:hover{background:linear-gradient(135deg,#444d56,#6a737d);}
+.push-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── RANGE ── */
+input[type=range]{width:100%;height:5px;-webkit-appearance:none;appearance:none;background:linear-gradient(to right,var(--navy) 0%,var(--navy) var(--rv,58%),#e0ddd6 var(--rv,58%),#e0ddd6 100%);border-radius:99px;outline:none;cursor:pointer;border:none;padding:0;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--gold);border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.22);cursor:pointer;}
+.rv-badge{display:inline-block;background:var(--navy);color:var(--gold-light);font-family:'Playfair Display',serif;font-size:1.2rem;padding:5px 14px;border-radius:7px;margin-bottom:7px;}
+.range-labels{display:flex;justify-content:space-between;font-size:.66rem;color:var(--muted);margin-top:4px;}
+
+/* ── TOGGLE ── */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0ece4;}
+.tog-row:last-child{border-bottom:none;}
+.tog-l{font-weight:700;font-size:.84rem;color:var(--navy);}
+.tog-s{font-size:.72rem;color:var(--muted);}
+.tog{position:relative;width:40px;height:21px;flex-shrink:0;margin-left:10px;}
+.tog input{opacity:0;width:0;height:0;position:absolute;}
+.tog-tr{position:absolute;inset:0;background:#ccc;border-radius:99px;cursor:pointer;transition:background .18s;}
+.tog input:checked+.tog-tr{background:var(--navy);}
+.tog-tr::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:white;border-radius:50%;transition:transform .18s;}
+.tog input:checked+.tog-tr::before{transform:translateX(19px);}
+
+/* ── POST ROWS ── */
+.prow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f0ece4;}
+.prow:last-child{border-bottom:none;}
+.pnum{background:var(--cream);color:var(--navy);font-family:'Playfair Display',serif;font-size:.8rem;font-weight:700;width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pi{flex:1;}
+.pi-t{font-weight:700;font-size:.83rem;color:var(--navy);}
+.pi-m{font-size:.7rem;color:var(--muted);margin-top:1px;}
+.pacts{display:flex;gap:4px;}
+.abtn{padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-family:'Lato',sans-serif;font-size:.7rem;font-weight:700;transition:all .16s;}
+.ae{background:var(--gold-dim);color:var(--navy);}.ae:hover{background:var(--gold);}
+.ad{background:var(--red-bg);color:var(--red);}.ad:hover{background:var(--red);color:#fff;}
+
+/* ── STATS STRIP ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+@media(max-width:660px){.stats{grid-template-columns:1fr 1fr;}}
+.sc{background:var(--white);border-radius:var(--r);padding:16px;box-shadow:var(--sh);text-align:center;}
+.sv{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--navy);line-height:1;}
+.sl{font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.sch{font-size:.68rem;color:var(--green);margin-top:2px;font-weight:700;}
+
+/* ── PHOTO GRID ADMIN ── */
+.pa-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;}
+@media(max-width:700px){.pa-grid{grid-template-columns:repeat(3,1fr);}}
+.pa-item{aspect-ratio:1;border-radius:7px;overflow:hidden;position:relative;cursor:pointer;transition:transform .18s;}
+.pa-item:hover{transform:scale(1.04);}
+.pa-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;}
+.pa-ov{position:absolute;inset:0;background:rgba(26,39,68,0);display:flex;align-items:center;justify-content:center;gap:4px;transition:background .18s;}
+.pa-item:hover .pa-ov{background:rgba(26,39,68,.65);}
+.pa-ov button{opacity:0;transform:translateY(4px);transition:all .16s;padding:4px 8px;border-radius:5px;border:none;cursor:pointer;font-size:.68rem;font-weight:700;background:white;color:var(--navy);}
+.pa-item:hover .pa-ov button{opacity:1;transform:translateY(0);}
+.pa-add{aspect-ratio:1;border-radius:7px;border:2px dashed #c8c4bc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;background:rgba(255,255,255,.5);transition:all .18s;}
+.pa-add:hover{border-color:var(--gold);background:var(--gold-dim);}
+
+/* ── MAP EDITOR ── */
+#admin-map{height:500px;z-index:1;}
+.map-editor-controls{background:var(--white);border:2px solid var(--navy);border-radius:8px;padding:14px;margin-bottom:14px;}
+.map-editor-controls h4{font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:10px;font-size:.95rem;}
+.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.draw-btn{padding:7px 14px;border-radius:6px;border:2px solid #e0ddd6;background:var(--white);font-family:'Lato',sans-serif;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--muted);}
+.draw-btn:hover,.draw-btn.active{border-color:var(--navy);background:var(--navy);color:#fff;}
+.draw-btn.danger{border-color:var(--red);color:var(--red);}.draw-btn.danger:hover{background:var(--red);color:#fff;}
+.layer-btns{display:flex;gap:6px;margin-bottom:10px;}
+.layer-btn{padding:5px 12px;border-radius:20px;border:2px solid #e0ddd6;background:var(--white);font-family:'Lato',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--muted);}
+.layer-btn.on,.layer-btn:hover{border-color:var(--navy);background:var(--navy);color:#fff;}
+.geojson-box{background:var(--cream);border-radius:6px;padding:10px;font-size:.72rem;font-family:monospace;color:var(--navy);max-height:100px;overflow-y:auto;margin-top:8px;word-break:break-all;}
+.area-list{display:flex;flex-direction:column;gap:6px;}
+.area-row{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:7px;background:var(--cream);border:2px solid transparent;cursor:pointer;transition:all .16s;}
+.area-row.cur{border-color:var(--gold);background:var(--gold-dim);}
+.area-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.area-rname{font-weight:700;font-size:.83rem;color:var(--navy);flex:1;}
+.area-stat{font-size:.68rem;padding:2px 7px;border-radius:20px;font-weight:700;}
+.as-done{background:var(--green-bg);color:var(--green);}
+.as-cur{background:var(--gold-dim);color:var(--navy);}
+.as-fut{background:#f0f0f0;color:#999;}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(10,15,30,.65);z-index:1000;align-items:center;justify-content:center;}
+.modal-bg.on{display:flex;}
+.modal{background:var(--white);border-radius:var(--r);width:90%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:mIn .22s ease;}
+@keyframes mIn{from{transform:scale(.94);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-hd{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-hd h3{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);}
+.modal-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);}
+.modal-body{padding:16px 24px 20px;}
+.modal-ft{padding:0 24px 18px;display:flex;gap:7px;justify-content:flex-end;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--green);color:#fff;padding:10px 15px;border-radius:8px;font-weight:700;font-size:.81rem;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;display:flex;align-items:center;gap:6px;}
+.toast.on{transform:translateY(0);opacity:1;}
+
+/* ── GH PUSH PANEL ── */
+.gh-config{background:linear-gradient(135deg,#24292e,#444d56);border-radius:var(--r);padding:20px;color:#fff;margin-bottom:18px;}
+.gh-config h4{font-family:'Playfair Display',serif;color:var(--gold-light);margin-bottom:12px;}
+.gh-config label{color:rgba(255,255,255,.7);}
+.gh-config input{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;}
+.gh-config input:focus{border-color:var(--gold);}
+.gh-config input::placeholder{color:rgba(255,255,255,.35);}
+
+.dropzone{border:2px dashed #c8c4bc;border-radius:9px;padding:32px;text-align:center;cursor:pointer;background:rgba(255,255,255,.5);transition:all .18s;}
+.dropzone:hover{border-color:var(--gold);background:var(--gold-dim);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">✝</div>
+    <h2>Admin Panel</h2>
+    <p>Elder Gledhill's Mission Site — Family Access Only</p>
+    <div class="fg"><label>Password</label><input type="password" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-err" id="loginErr">❌ Incorrect password</div>
+    <button class="btn bn bfull" style="margin-top:8px;" onclick="doLogin()">🔐 Sign In</button>
+    <div class="login-hint">Default: <b>mission2024</b> — change in Settings</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">✝</div>
+    <div class="sb-title">Elder <span>Gledhill</span><br>Admin Panel</div>
+    <div class="sb-sub">Idaho Falls Mission</div>
+  </div>
+  <div class="sb-section">Overview</div>
+  <button class="si on" onclick="sw('dash',this)"><span class="si-ico">📊</span>Dashboard</button>
+  <div class="sb-section">Content</div>
+  <button class="si" onclick="sw('profile',this)"><span class="si-ico">👤</span>Profile &amp; Info</button>
+  <button class="si" onclick="sw('progress',this)"><span class="si-ico">📈</span>Mission Progress</button>
+  <button class="si" onclick="sw('map',this)"><span class="si-ico">🗺️</span>Mission Map Editor</button>
+  <button class="si" onclick="sw('updates',this)"><span class="si-ico">📝</span>Weekly Updates</button>
+  <button class="si" onclick="sw('photos',this)"><span class="si-ico">📷</span>Photos</button>
+  <button class="si" onclick="sw('scripture',this)"><span class="si-ico">📖</span>Scripture</button>
+  <button class="si" onclick="sw('timeline',this)"><span class="si-ico">📅</span>Timeline</button>
+  <div class="sb-section">Admin</div>
+  <button class="si" onclick="sw('github',this)"><span class="si-ico">🐙</span>GitHub / Publish</button>
+  <button class="si" onclick="sw('settings',this)"><span class="si-ico">⚙️</span>Settings</button>
+  <button class="si" onclick="sw('messages',this)"><span class="si-ico">💌</span>Messages</button>
+  <button class="si" onclick="sw('subs',this)"><span class="si-ico">🔔</span>Subscribers</button>
+  <div class="sb-footer">
+    <button class="sb-btn sb-preview" onclick="window.open('index.html','_blank')">👁️ View Live Site</button>
+    <button class="sb-btn sb-close" onclick="logout()">🚪 Sign Out</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Overview Dashboard</div>
+    <div class="topbar-right">
+      <div class="github-status" id="gh-status">⚪ GitHub not configured</div>
+      <button class="push-btn" onclick="pushToGitHub()">🐙 Push to GitHub</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="apanel on" id="ap-dash">
+      <div class="stats" id="dash-stats">
+        <div class="sc"><div class="sv" id="ds-posts">47</div><div class="sl">Updates Posted</div><div class="sch">+1 this week</div></div>
+        <div class="sc"><div class="sv" id="ds-prog">58%</div><div class="sl">Mission Complete</div><div class="sch">14 of 24 months</div></div>
+        <div class="sc"><div class="sv" id="ds-subs">124</div><div class="sl">Subscribers</div><div class="sch">+8 this month</div></div>
+        <div class="sc"><div class="sv" id="ds-photos">10</div><div class="sl">Photos</div><div class="sch">+6 this week</div></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-title">Quick Actions</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:12px;">
+            <button class="btn bn bfull" onclick="sw('updates',document.querySelector('[onclick*=updates]'))">✏️ Write This Week's Update</button>
+            <button class="btn bg bfull" onclick="sw('photos',document.querySelector('[onclick*=photos]'))">📷 Manage Photos</button>
+            <button class="btn bn bfull" onclick="sw('progress',document.querySelector('[onclick*=progress]'))">📈 Update Progress Bars</button>
+            <button class="btn bn bfull" onclick="sw('scripture',document.querySelector('[onclick*=scripture]'))">📖 Change Weekly Scripture</button>
+            <button class="push-btn bfull" onclick="pushToGitHub()">🐙 Publish All Changes to GitHub</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Recent Messages</div>
+          <div class="card-desc">From supporters via the Contact page</div>
+          <div id="dash-messages"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PROFILE ═══ -->
+    <div class="apanel" id="ap-profile">
+      <div class="card">
+        <div class="card-title">Missionary Profile</div>
+        <div class="card-desc">Appears on the About page and throughout the site.</div>
+        <div class="fr">
+          <div class="fg"><label>First Name</label><input id="p-first"></div>
+          <div class="fg"><label>Last Name</label><input id="p-last"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Hometown</label><input id="p-hometown"></div>
+          <div class="fg"><label>Age</label><input type="number" id="p-age"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Mission Name</label><input id="p-mission"></div>
+          <div class="fg"><label>Mission President</label><input id="p-pres"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Start Date</label><input type="date" id="p-start"></div>
+          <div class="fg"><label>End Date</label><input type="date" id="p-end"></div>
+        </div>
+        <div class="fg"><label>Current Companion</label><input id="p-comp"></div>
+        <div class="fg"><label>Current Area</label><input id="p-area"></div>
+        <div class="fg"><label>College Plans</label><input id="p-college"></div>
+        <div class="fg"><label>Hobbies (comma separated)</label><input id="p-hobbies"></div>
+        <div class="fg"><label>Personal Bio</label><textarea id="p-bio" style="min-height:110px;"></textarea></div>
+        <div class="fg"><label>Testimony</label><textarea id="p-testimony" style="min-height:130px;"></textarea></div>
+        <button class="btn bg" onclick="saveProfile()">💾 Save Profile</button>
+      </div>
+    </div>
+
+    <!-- ═══ PROGRESS ═══ -->
+    <div class="apanel" id="ap-progress">
+      <div class="card">
+        <div class="card-title">Mission Progress Bars</div>
+        <div class="card-desc">These update the homepage progress bars live.</div>
+        <div class="fg" style="margin-top:8px;">
+          <label>Overall Mission Progress</label>
+          <div class="rv-badge" id="rv-overall">58%</div>
+          <input type="range" min="0" max="100" id="r-overall" style="--rv:58%" oninput="rv(this,'rv-overall',v=>v+'%')">
+          <div class="range-labels"><span>Jan 2024 (Start)</span><span>Jan 2026 (Done!)</span></div>
+        </div>
+        <div class="fg" style="margin-top:22px;">
+          <label>Current Area Progress</label>
+          <div class="rv-badge" id="rv-area">50%</div>
+          <input type="range" min="0" max="100" id="r-area" style="--rv:50%" oninput="rv(this,'rv-area',v=>v+'%')">
+        </div>
+        <div class="fg" style="margin-top:22px;">
+          <label>This Week's Discussion Goal (target: 12)</label>
+          <div class="rv-badge" id="rv-goal">8 / 12</div>
+          <input type="range" min="0" max="12" id="r-goal" oninput="rvGoal(this)">
+        </div>
+        <button class="btn bg" style="margin-top:8px;" onclick="saveProgress()">💾 Save Progress</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Hero Banner Stats</div>
+        <div class="card-desc">Numbers shown in the homepage hero banner.</div>
+        <div class="fr3">
+          <div class="fg"><label>Months Served</label><input type="number" id="s-months"></div>
+          <div class="fg"><label>Total Months</label><input type="number" id="s-total"></div>
+          <div class="fg"><label>Areas Served</label><input type="number" id="s-areas"></div>
+        </div>
+        <button class="btn bg" onclick="saveStats()">💾 Save Stats</button>
+      </div>
+    </div>
+
+    <!-- ═══ MAP EDITOR ═══ -->
+    <div class="apanel" id="ap-map">
+      <div class="g2" style="align-items:start;">
+        <div>
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div style="padding:14px 16px 10px;border-bottom:1px solid #f0ece4;">
+              <div class="card-title">Interactive Map Editor</div>
+              <div class="card-desc" style="margin:0;">Draw boundaries, move the location pin, and set served areas.</div>
+            </div>
+            <!-- Map layer toggles -->
+            <div style="padding:8px 12px;background:var(--white);border-bottom:1px solid #f0ece4;display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="layer-btn on" onclick="adminSetLayer('road',this)">🗺 Road</button>
+              <button class="layer-btn" onclick="adminSetLayer('satellite',this)">🛰 Satellite</button>
+              <button class="layer-btn" onclick="adminSetLayer('topo',this)">🏔 Terrain</button>
+            </div>
+            <div id="admin-map"></div>
+            <!-- Drawing tools legend -->
+            <div style="padding:10px 14px;background:var(--cream);border-top:1px solid #f0ece4;font-size:.72rem;color:var(--muted);line-height:1.7;">
+              <b>How to use:</b><br>
+              🔵 <b>Draw Mission Boundary</b> → click the polygon tool → click points around the mission border → double-click to close.<br>
+              🟡 <b>Draw Area Boundary</b> → same method, then assign to an area below.<br>
+              📍 <b>Move Current Pin</b> → click anywhere on the map to relocate.<br>
+              ✏️ <b>Edit</b> → use the edit toolbar to adjust existing shapes.<br>
+              🗑 <b>Delete</b> → select shapes and delete.
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Current Location Pin</div>
+            <div class="card-desc">Click anywhere on the map to move the current location pin, or enter coordinates manually.</div>
+            <div class="fr">
+              <div class="fg"><label>City Name</label><input id="loc-city" oninput="updatePinLabel()"></div>
+              <div class="fg"><label>State</label><input id="loc-state"></div>
+            </div>
+            <div class="fg"><label>Area Description</label><input id="loc-desc"></div>
+            <div class="fr">
+              <div class="fg"><label>Latitude</label><input id="loc-lat" readonly style="background:#f8f6f0;"></div>
+              <div class="fg"><label>Longitude</label><input id="loc-lng" readonly style="background:#f8f6f0;"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Mission Boundary</div>
+            <div class="card-desc">Drawn shape — paste GeoJSON or draw on map above. When you're happy with the boundary, click Save.</div>
+            <div class="fg">
+              <label>Import GeoJSON / KML coordinates</label>
+              <textarea id="boundary-json" style="min-height:80px;font-family:monospace;font-size:.72rem;" placeholder='Paste GeoJSON coordinates array: [[lat,lng],[lat,lng],…]'></textarea>
+            </div>
+            <div style="display:flex;gap:7px;">
+              <button class="btn bn" onclick="importBoundary()">📥 Import Boundary</button>
+              <button class="btn br" onclick="clearMissionBoundary()">🗑 Clear</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Areas Served</div>
+            <div class="card-desc">Draw an area boundary on the map, then assign it to an area below.</div>
+            <div class="area-list" id="area-list"></div>
+            <button class="btn bn bfull" style="margin-top:10px;" onclick="addArea()">+ Add New Area</button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Other Mission Cities</div>
+            <div class="card-desc">Add or remove cities shown on the map.</div>
+            <div id="city-list" style="max-height:180px;overflow-y:auto;margin-bottom:10px;"></div>
+            <div class="fr">
+              <div class="fg"><input id="new-city-name" placeholder="City name"></div>
+              <div class="fg"><input id="new-city-lat" placeholder="Lat (e.g. 43.49)"></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><input id="new-city-lng" placeholder="Lng (e.g. -112.03)"></div>
+              <button class="btn bg" onclick="addCity()">+ Add City</button>
+            </div>
+          </div>
+
+          <button class="btn bg bfull" style="margin-top:4px;" onclick="saveMapData()">💾 Save All Map Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ UPDATES ═══ -->
+    <div class="apanel" id="ap-updates">
+      <div class="card">
+        <div class="card-title">Write New Update ✏️</div>
+        <div class="card-desc">Publish to the top of the Updates page.</div>
+        <div class="fr">
+          <div class="fg"><label>Week Number</label><input type="number" id="nu-week" value="48"></div>
+          <div class="fg"><label>Date</label><input type="date" id="nu-date"></div>
+        </div>
+        <div class="fg"><label>Title</label><input id="nu-title" placeholder="e.g. A Week of Miracles"></div>
+        <div class="fg"><label>Location</label><input id="nu-loc" value="Idaho Falls, ID – West Area"></div>
+        <div class="fg"><label>Your Letter</label><textarea id="nu-body" style="min-height:160px;" placeholder="Dear family and friends,&#10;&#10;This week was…"></textarea></div>
+        <div class="fr">
+          <div class="fg"><label>Scripture Text</label><input id="nu-verse" placeholder="And the Spirit shall be given…"></div>
+          <div class="fg"><label>Scripture Reference</label><input id="nu-ref" placeholder="D&amp;C 42:14"></div>
+        </div>
+        <div class="fg"><label>Tags (comma separated)</label><input id="nu-tags" placeholder="Teaching, Service, Zone Conference"></div>
+        <div style="display:flex;gap:7px;margin-top:4px;">
+          <button class="btn bg" onclick="publishPost()">🚀 Publish Update</button>
+          <button class="btn bn" onclick="saveDraft()">💾 Save Draft</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">All Updates</div>
+        <div class="card-desc">Edit or delete any past update. Changes are saved locally until you push to GitHub.</div>
+        <div id="admin-posts"></div>
+      </div>
+    </div>
+
+    <!-- ═══ PHOTOS ═══ -->
+    <div class="apanel" id="ap-photos">
+      <div class="card">
+        <div class="card-title">Upload Photos</div>
+        <div class="card-desc">Add new photos to the gallery. Photos are stored as emoji placeholders in the demo — in production, upload to a CDN or GitHub Assets.</div>
+        <div class="dropzone" onclick="toast('File picker would open here in production 📸')">
+          <div style="font-size:2rem;margin-bottom:7px;">📸</div>
+          <div style="font-weight:700;color:var(--navy);">Drop photos here or click to browse</div>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:3px;">JPG, PNG · Max 10MB · Multiple files OK</div>
+        </div>
+        <div class="fr" style="margin-top:12px;">
+          <div class="fg"><label>Album Name</label><select id="ph-album"><option>March 2025</option><option>Early 2025</option><option>2024</option><option value="new">+ New Album…</option></select></div>
+          <div class="fg"><label>Caption</label><input id="ph-caption" placeholder="e.g. Zone Conference, March 2025"></div>
+        </div>
+        <button class="btn bg" onclick="toast('Photo added! Push to GitHub to publish.')">+ Add Photo</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Manage Photos</div>
+        <div class="card-desc">Hover to edit or delete. Changes are local until pushed to GitHub.</div>
+        <div class="pa-grid" id="photo-admin-grid"></div>
+      </div>
+    </div>
+
+    <!-- ═══ SCRIPTURE ═══ -->
+    <div class="apanel" id="ap-scripture">
+      <div class="card">
+        <div class="card-title">Weekly Scripture</div>
+        <div class="card-desc">Appears on the homepage and Updates page.</div>
+        <div class="fg"><label>Scripture Text</label><textarea id="sc-text" style="min-height:80px;font-family:'Playfair Display',serif;font-style:italic;"></textarea></div>
+        <div class="fg"><label>Full Reference (e.g. Doctrine &amp; Covenants 42:14)</label><input id="sc-ref"></div>
+        <button class="btn bg" onclick="saveScripture()">📖 Update Scripture</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Scripture Archive</div>
+        <div class="card-desc">Past scriptures from your updates.</div>
+        <div id="scripture-archive"></div>
+      </div>
+    </div>
+
+    <!-- ═══ TIMELINE ═══ -->
+    <div class="apanel" id="ap-timeline">
+      <div class="card">
+        <div class="card-title">Mission Timeline</div>
+        <div class="card-desc">Edit the timeline milestones shown on the homepage.</div>
+        <div id="timeline-list"></div>
+        <button class="btn bn" style="margin-top:12px;" onclick="addTimelineItem()">+ Add Milestone</button>
+      </div>
+    </div>
+
+    <!-- ═══ GITHUB ═══ -->
+    <div class="apanel" id="ap-github">
+      <div class="gh-config">
+        <h4>🐙 GitHub Configuration</h4>
+        <div class="fr">
+          <div class="fg"><label>GitHub Username</label><input id="gh-user" placeholder="your-username"></div>
+          <div class="fg"><label>Repository Name</label><input id="gh-repo" placeholder="mission-site"></div>
+        </div>
+        <div class="fg"><label>Branch</label><input id="gh-branch" value="main"></div>
+        <div class="fg"><label>Personal Access Token (PAT)</label><input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>
+        <p style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:6px;">Your PAT is stored only in your browser's localStorage. It never leaves your device except to authenticate with GitHub.</p>
+        <button class="btn bg" style="margin-top:10px;" onclick="saveGHConfig()">💾 Save GitHub Config</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">How to Get a GitHub Personal Access Token</div>
+        <div class="card-desc">Step-by-step instructions:</div>
+        <ol style="font-size:.84rem;line-height:2;color:var(--text);padding-left:18px;">
+          <li>Go to <b>github.com → Settings → Developer Settings → Personal access tokens → Tokens (classic)</b></li>
+          <li>Click <b>"Generate new token (classic)"</b></li>
+          <li>Give it a name like <b>"Mission Site Admin"</b></li>
+          <li>Set expiration to <b>No expiration</b> (or 1 year)</li>
+          <li>Check the <b>"repo"</b> scope (full control of private repos)</li>
+          <li>Click <b>Generate token</b> and copy it</li>
+          <li>Paste it in the field above and click Save</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Publish Changes to GitHub</div>
+        <div class="card-desc">This will commit and push your updated <b>data.json</b> to your GitHub repository. The live site will update automatically.</div>
+        <div class="fg"><label>Commit Message</label><input id="gh-commit-msg" value="Update mission data" placeholder="e.g. Add week 48 update"></div>
+        <button class="push-btn bfull" onclick="pushToGitHub()" style="margin-top:6px;">🐙 Push data.json to GitHub</button>
+        <div id="push-log" style="margin-top:12px;font-size:.78rem;color:var(--muted);font-family:monospace;background:var(--cream);border-radius:6px;padding:10px;min-height:40px;">Push log will appear here…</div>
+      </div>
+    </div>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div class="apanel" id="ap-settings">
+      <div class="card">
+        <div class="card-title">Site Feature Toggles</div>
+        <div class="tog-row"><div><div class="tog-l">Show Mission Progress Bar</div><div class="tog-s">Display the progress bars on the homepage</div></div><label class="tog"><input type="checkbox" checked id="t-progress"><div class="tog-tr"></div></label></div>
+        <div class="tog-row"><div><div class="tog-l">Show Mission Map</div><div class="tog-s">Show the interactive map with location pin</div></div><label class="tog"><input type="checkbox" checked id="t-map"><div class="tog-tr"></div></label></div>
+        <div class="tog-row"><div><div class="tog-l">Allow Contact Form Messages</div><div class="tog-s">Let visitors send messages via Contact page</div></div><label class="tog"><input type="checkbox" checked id="t-contact"><div class="tog-tr"></div></label></div>
+        <div class="tog-row"><div><div class="tog-l">Email Subscriptions</div><div class="tog-s">Allow visitors to subscribe for weekly updates</div></div><label class="tog"><input type="checkbox" checked id="t-subs"><div class="tog-tr"></div></label></div>
+        <div class="tog-row"><div><div class="tog-l">Photo Gallery Visible</div><div class="tog-s">Show the Photos page to the public</div></div><label class="tog"><input type="checkbox" checked id="t-photos"><div class="tog-tr"></div></label></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Change Admin Password</div>
+        <div class="fg"><label>Current Password</label><input type="password" id="cur-pw" placeholder="••••••••"></div>
+        <div class="fr">
+          <div class="fg"><label>New Password</label><input type="password" id="new-pw" placeholder="••••••••"></div>
+          <div class="fg"><label>Confirm</label><input type="password" id="conf-pw" placeholder="••••••••"></div>
+        </div>
+        <button class="btn bn" onclick="changePassword()">🔐 Update Password</button>
+      </div>
+    </div>
+
+    <!-- ═══ MESSAGES ═══ -->
+    <div class="apanel" id="ap-messages">
+      <div class="card">
+        <div class="card-title">Messages from Supporters</div>
+        <div class="card-desc">Sent through the Contact page.</div>
+        <div id="message-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══ SUBSCRIBERS ═══ -->
+    <div class="apanel" id="ap-subs">
+      <div class="card">
+        <div class="card-title">Email Subscribers</div>
+        <div class="card-desc" id="subs-count">Loading…</div>
+        <div id="subs-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Send Broadcast Email</div>
+        <div class="card-desc">Note: Actual email delivery requires an email service (e.g. Mailchimp, SendGrid). This records the broadcast intent in data.json.</div>
+        <div class="fg"><label>Subject</label><input placeholder="e.g. Special Announcement from Elder Gledhill"></div>
+        <div class="fg"><label>Message</label><textarea placeholder="Write your message here…"></textarea></div>
+        <button class="btn bg" onclick="toast('Broadcast recorded! Connect an email service to deliver.')">📤 Save Broadcast</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- EDIT POST MODAL -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <div class="modal-hd"><h3>Edit Update</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>Title</label><input id="em-title"></div>
+      <div class="fg"><label>Date</label><input id="em-date"></div>
+      <div class="fg"><label>Location</label><input id="em-loc"></div>
+      <div class="fg"><label>Letter Body</label><textarea id="em-body" style="min-height:160px;"></textarea></div>
+      <div class="fr">
+        <div class="fg"><label>Scripture</label><input id="em-verse"></div>
+        <div class="fg"><label>Reference</label><input id="em-ref"></div>
+      </div>
+      <div class="fg"><label>Tags (comma separated)</label><input id="em-tags"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" style="border:2px solid #e0ddd6;color:var(--muted);" onclick="closeModal()">Cancel</button>
+      <button class="btn bn" onclick="saveEditedPost()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD AREA MODAL -->
+<div class="modal-bg" id="area-modal">
+  <div class="modal">
+    <div class="modal-hd"><h3>Add / Edit Area</h3><button class="modal-close" onclick="closeAreaModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>Area Name</label><input id="am-name" placeholder="e.g. Rexburg"></div>
+      <div class="fr">
+        <div class="fg"><label>Status</label><select id="am-status"><option value="future">Upcoming</option><option value="completed">Completed</option><option value="current">Current</option></select></div>
+        <div class="fg"><label>Center Latitude</label><input id="am-lat" type="number" step="0.001"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Center Longitude</label><input id="am-lng" type="number" step="0.001"></div>
+        <div class="fg"><label>Start Date</label><input id="am-start" placeholder="e.g. March 2024"></div>
+      </div>
+      <div class="fg"><label>End Date</label><input id="am-end" placeholder="e.g. September 2024 (or leave blank)"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" style="border:2px solid #e0ddd6;color:var(--muted);" onclick="closeAreaModal()">Cancel</button>
+      <button class="btn bn" onclick="saveArea()">💾 Save Area</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ Done!</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════════════════
+const LOCAL_KEY  = 'mission_admin_data';
+const GH_KEY     = 'mission_gh_config';
+const PW_KEY     = 'mission_admin_pw';
+let D            = null;   // full data object
+let GH           = null;   // github config
+let editingPostId = null;
+let editingAreaIdx = null;
+
+// Admin map vars
+let adminMap       = null;
+let adminLayer     = null;
+let adminDrawLayer = null;
+let adminPinMarker = null;
+let drawnItems     = null;
+let missionBoundaryLayer = null;
+let areaLayerGroup = null;
+
+const adminLayers = {
+  road:      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO',maxZoom:18}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:18}),
+  topo:      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap, © OpenTopoMap',maxZoom:17})
+};
+
+const AREA_COLORS = {current:'#C9A84C',completed:'#2a7a4a',future:'#9ca3af'};
+
+// ═══════════════════════════════════════════════════════════
+// LOAD / SAVE
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  // Load GH config from localStorage
+  GH = JSON.parse(localStorage.getItem(GH_KEY) || '{}');
+  // Load data — try GitHub first, then local, then localStorage cache
+  let loaded = false;
+  if (GH.user && GH.repo) {
+    try {
+      const url = `https://raw.githubusercontent.com/${GH.user}/${GH.repo}/main/data.json?t=${Date.now()}`;
+      const r = await fetch(url);
+      if (r.ok) { D = await r.json(); loaded = true; log('Loaded from GitHub ✅'); }
+    } catch(e){}
+  }
+  if (!loaded) {
+    try {
+      const r = await fetch('data.json?t=' + Date.now());
+      if (r.ok) { D = await r.json(); loaded = true; log('Loaded local data.json ✅'); }
+    } catch(e){}
+  }
+  if (!loaded) {
+    const cached = localStorage.getItem(LOCAL_KEY);
+    if (cached) { D = JSON.parse(cached); loaded = true; log('Loaded from localStorage cache ⚠️'); }
+  }
+  if (!loaded) { alert('Could not load data.json. Make sure it exists in the same folder.'); return; }
+  populateAll();
+  updateGHStatus();
+}
+
+function saveLocal() {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(D));
+}
+
+// ═══════════════════════════════════════════════════════════
+// POPULATE ALL PANELS
+// ═══════════════════════════════════════════════════════════
+function populateAll() {
+  populateProfile();
+  populateProgress();
+  populateScripture();
+  populateTimeline();
+  populatePhotos();
+  populateMessages();
+  populateSubs();
+  populatePosts();
+  populateGHConfig();
+  populateDash();
+}
+
+function populateDash() {
+  const s = D.stats;
+  document.getElementById('ds-posts').textContent  = D.posts.length;
+  document.getElementById('ds-prog').textContent   = s.overallProgress + '%';
+  document.getElementById('ds-subs').textContent   = D.subscribers.length;
+  document.getElementById('ds-photos').textContent = D.photos.length;
+  // Messages preview
+  const ml = document.getElementById('dash-messages');
+  ml.innerHTML = D.messages.slice(0,4).map(m => `
+    <div class="prow">
+      <div class="pnum">💌</div>
+      <div class="pi"><div class="pi-t">${m.name} — "${m.message.slice(0,50)}…"</div><div class="pi-m">${m.date} · ${m.relation}</div></div>
+      <div class="pacts"><button class="abtn ae" onclick="sw('messages',document.querySelector('[onclick*=messages]'))">View</button></div>
+    </div>`).join('');
+}
+
+function populateProfile() {
+  const m = D.missionary;
+  set('p-first', m.firstName); set('p-last', m.lastName);
+  set('p-hometown', m.hometown); set('p-age', m.age);
+  set('p-mission', m.missionName); set('p-pres', m.missionPresident);
+  set('p-start', m.startDate); set('p-end', m.endDate);
+  set('p-comp', m.currentCompanion); set('p-area', m.currentArea);
+  set('p-college', m.collegePlans);
+  set('p-hobbies', m.hobbies.join(', '));
+  set('p-bio', m.bio); set('p-testimony', m.testimony);
+}
+
+function populateProgress() {
+  const s = D.stats;
+  setRange('r-overall', s.overallProgress, 'rv-overall', v=>v+'%');
+  setRange('r-area', s.areaProgress, 'rv-area', v=>v+'%');
+  document.getElementById('r-goal').value = s.weeklyGoalDiscussions;
+  rvGoal(document.getElementById('r-goal'));
+  set('s-months', s.monthsServed); set('s-total', s.monthsTotal); set('s-areas', s.areasServed);
+}
+
+function populateScripture() {
+  set('sc-text', D.scripture.text); set('sc-ref', D.scripture.reference);
+  // Archive
+  const arch = document.getElementById('scripture-archive');
+  const refs = D.posts.filter(p=>p.scriptureRef).slice(0,8);
+  arch.innerHTML = refs.map(p=>`<div class="prow"><div class="pnum">📖</div><div class="pi"><div class="pi-t">"${p.scripture}"</div><div class="pi-m">${p.scriptureRef} · ${p.date}</div></div></div>`).join('');
+}
+
+function populateTimeline() {
+  const c = document.getElementById('timeline-list');
+  c.innerHTML = D.timeline.map((t,i) => `
+    <div class="prow" id="tl-${i}">
+      <div class="pnum">${t.status==='done'?'✅':t.status==='current'?'📍':'🔜'}</div>
+      <div class="pi">
+        <div class="pi-t">${t.event}</div>
+        <div class="pi-m">${t.date} · <span style="color:${t.status==='done'?'var(--green)':t.status==='current'?'var(--gold)':'var(--muted)'}">${t.status}</span></div>
+      </div>
+      <div class="pacts">
+        <button class="abtn ae" onclick="editTL(${i})">Edit</button>
+        <button class="abtn ad" onclick="deleteTL(${i})">Del</button>
+      </div>
+    </div>`).join('');
+}
+
+function populatePhotos() {
+  const g = document.getElementById('photo-admin-grid');
+  g.innerHTML = D.photos.map((p,i) => `
+    <div class="pa-item">
+      <div class="pa-inner" style="background:${p.bg};">${p.emoji}</div>
+      <div class="pa-ov">
+        <button onclick="editPhoto(${p.id})">✏️</button>
+        <button onclick="deletePhoto(${p.id})" style="color:var(--red);">🗑️</button>
+      </div>
+    </div>`).join('') +
+    `<div class="pa-add" onclick="toast('File picker in production! 📸')"><span>➕</span><p style="font-size:.66rem;color:var(--muted);font-weight:700;">Add Photo</p></div>`;
+}
+
+function populateMessages() {
+  const c = document.getElementById('message-list');
+  c.innerHTML = D.messages.map((m,i) => `
+    <div class="prow">
+      <div class="pnum">💌</div>
+      <div class="pi">
+        <div class="pi-t">${m.name} (${m.relation})</div>
+        <div class="pi-m">${m.message.slice(0,80)}… · ${m.date}</div>
+      </div>
+      <div class="pacts">
+        <button class="abtn ae" onclick="toast('Reply via email: ${m.email}')">Reply</button>
+        <button class="abtn ad" onclick="deleteMessage(${i})">Del</button>
+      </div>
+    </div>`).join('');
+}
+
+function populateSubs() {
+  document.getElementById('subs-count').textContent = D.subscribers.length + ' people subscribed to weekly updates.';
+  document.getElementById('subs-list').innerHTML = D.subscribers.map((s,i) => `
+    <div class="prow">
+      <div class="pnum">📧</div>
+      <div class="pi"><div class="pi-t">${s.email}</div><div class="pi-m">Subscribed ${s.date} · ${s.relation}</div></div>
+      <div class="pacts"><button class="abtn ad" onclick="deleteSub(${i})">Unsub</button></div>
+    </div>`).join('');
+}
+
+function populatePosts() {
+  const c = document.getElementById('admin-posts');
+  c.innerHTML = D.posts.map(p => `
+    <div class="prow" id="pr-${p.id}">
+      <div class="pnum">${p.week}</div>
+      <div class="pi"><div class="pi-t">${p.title}</div><div class="pi-m">${p.date} · Published</div></div>
+      <div class="pacts">
+        <button class="abtn ae" onclick="openEditPost(${p.id})">Edit</button>
+        <button class="abtn ad" onclick="deletePost(${p.id})">Delete</button>
+      </div>
+    </div>`).join('');
+  // Set next week number
+  document.getElementById('nu-week').value = (D.posts[0]?.week || 47) + 1;
+  document.getElementById('nu-date').value = new Date().toISOString().split('T')[0];
+}
+
+function populateGHConfig() {
+  if (GH.user)   set('gh-user', GH.user);
+  if (GH.repo)   set('gh-repo', GH.repo);
+  if (GH.branch) set('gh-branch', GH.branch);
+  if (GH.token)  document.getElementById('gh-token').value = GH.token;
+  set('gh-commit-msg', 'Update mission data — ' + new Date().toLocaleDateString());
+}
+
+function populateAreaList() {
+  const c = document.getElementById('area-list');
+  c.innerHTML = D.mapBoundaries.areas.map((a,i) => `
+    <div class="area-row ${a.status==='current'?'cur':''}" onclick="selectArea(${i})">
+      <div class="area-dot" style="background:${AREA_COLORS[a.status]}"></div>
+      <div class="area-rname">${a.name}</div>
+      <span class="area-stat ${a.status==='done'?'as-done':a.status==='current'?'as-cur':'as-fut'}">${a.status}</span>
+      <button class="abtn ae" onclick="editArea(${i},event)">Edit</button>
+    </div>`).join('');
+  // City list
+  const cl = document.getElementById('city-list');
+  cl.innerHTML = D.mapBoundaries.cities.map((c,i) => `
+    <div class="prow">
+      <div class="pi"><div class="pi-t">${c.name}</div><div class="pi-m">${c.lat}, ${c.lng}</div></div>
+      <div class="pacts"><button class="abtn ad" onclick="deleteCity(${i})">Remove</button></div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SAVE HANDLERS
+// ═══════════════════════════════════════════════════════════
+function saveProfile() {
+  const m = D.missionary;
+  m.firstName = get('p-first'); m.lastName = get('p-last');
+  m.hometown  = get('p-hometown'); m.age = parseInt(get('p-age'));
+  m.missionName = get('p-mission'); m.missionPresident = get('p-pres');
+  m.startDate = get('p-start'); m.endDate = get('p-end');
+  m.currentCompanion = get('p-comp'); m.currentArea = get('p-area');
+  m.collegePlans = get('p-college');
+  m.hobbies = get('p-hobbies').split(',').map(h=>h.trim()).filter(Boolean);
+  m.bio = get('p-bio'); m.testimony = get('p-testimony');
+  saveLocal(); toast('Profile saved! 👤 Push to GitHub to publish.');
+}
+
+function saveProgress() {
+  const s = D.stats;
+  s.overallProgress = parseInt(document.getElementById('r-overall').value);
+  s.areaProgress    = parseInt(document.getElementById('r-area').value);
+  s.weeklyGoalDiscussions = parseInt(document.getElementById('r-goal').value);
+  saveLocal(); toast('Progress updated! 📈');
+}
+
+function saveStats() {
+  const s = D.stats;
+  s.monthsServed = parseInt(get('s-months'));
+  s.monthsTotal  = parseInt(get('s-total'));
+  s.areasServed  = parseInt(get('s-areas'));
+  document.getElementById('ds-prog').textContent = s.overallProgress + '%';
+  saveLocal(); toast('Stats saved!');
+}
+
+function saveScripture() {
+  D.scripture.text      = get('sc-text');
+  D.scripture.reference = get('sc-ref');
+  saveLocal(); toast('Scripture updated! 📖 Push to GitHub to publish.');
+}
+
+function saveMapData() {
+  const s = D.location;
+  s.city            = get('loc-city');
+  s.state           = get('loc-state');
+  s.areaDescription = get('loc-desc');
+  s.lat             = parseFloat(get('loc-lat')) || s.lat;
+  s.lng             = parseFloat(get('loc-lng')) || s.lng;
+  saveLocal(); toast('Map data saved! 🗺️ Push to GitHub to publish.');
+}
+
+function saveGHConfig() {
+  GH = { user:get('gh-user'), repo:get('gh-repo'), branch:get('gh-branch')||'main', token:document.getElementById('gh-token').value.trim() };
+  localStorage.setItem(GH_KEY, JSON.stringify(GH));
+  updateGHStatus(); toast('GitHub config saved! 🐙');
+}
+
+function saveArea() {
+  const area = {
+    id: get('am-name').toLowerCase().replace(/\s+/g,'-'),
+    name: get('am-name'), status: get('am-status'),
+    lat: parseFloat(get('am-lat')), lng: parseFloat(get('am-lng')),
+    startDate: get('am-start'), endDate: get('am-end') || null,
+    boundary: []
+  };
+  if (editingAreaIdx !== null) {
+    D.mapBoundaries.areas[editingAreaIdx] = {...D.mapBoundaries.areas[editingAreaIdx], ...area};
+  } else {
+    D.mapBoundaries.areas.push(area);
+  }
+  closeAreaModal(); populateAreaList(); refreshAdminMapAreas();
+  saveLocal(); toast('Area saved!');
+}
+
+// ═══════════════════════════════════════════════════════════
+// POSTS
+// ═══════════════════════════════════════════════════════════
+function publishPost() {
+  const week  = parseInt(get('nu-week'));
+  const title = get('nu-title').trim();
+  const body  = get('nu-body').trim();
+  if (!title || !body) { toast('Title and letter body are required', '#c0392b'); return; }
+  const post = {
+    id: Date.now(), week, date: formatDate(get('nu-date')),
+    title, location: get('nu-loc'),
+    body, scripture: get('nu-verse'),
+    scriptureRef: get('nu-ref'),
+    tags: get('nu-tags').split(',').map(t=>t.trim()).filter(Boolean)
+  };
+  D.posts.unshift(post);
+  D.stats.weeklyUpdates = D.posts.length;
+  saveLocal(); populatePosts(); populateDash();
+  ['nu-title','nu-body','nu-verse','nu-ref','nu-tags'].forEach(id=>set(id,''));
+  toast(`Week ${week} published! 🚀 Push to GitHub to go live.`);
+}
+
+function saveDraft() {
+  saveLocal(); toast('Draft saved locally 💾');
+}
+
+function openEditPost(id) {
+  editingPostId = id;
+  const p = D.posts.find(x=>x.id===id);
+  if (!p) return;
+  set('em-title', p.title); set('em-date', p.date); set('em-loc', p.location);
+  set('em-body', p.body); set('em-verse', p.scripture); set('em-ref', p.scriptureRef);
+  set('em-tags', (p.tags||[]).join(', '));
+  document.getElementById('edit-modal').classList.add('on');
+}
+
+function saveEditedPost() {
+  const p = D.posts.find(x=>x.id===editingPostId);
+  if (!p) return;
+  p.title = get('em-title'); p.date = get('em-date'); p.location = get('em-loc');
+  p.body = get('em-body'); p.scripture = get('em-verse'); p.scriptureRef = get('em-ref');
+  p.tags = get('em-tags').split(',').map(t=>t.trim()).filter(Boolean);
+  closeModal(); saveLocal(); populatePosts();
+  toast('Update saved! Push to GitHub to publish.');
+}
+
+function deletePost(id) {
+  if (!confirm('Delete this update permanently?')) return;
+  D.posts = D.posts.filter(p=>p.id!==id);
+  saveLocal(); populatePosts(); populateDash();
+  toast('Update deleted', '#c0392b');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIMELINE
+// ═══════════════════════════════════════════════════════════
+function addTimelineItem() {
+  const date  = prompt('Date (e.g. July 2025):'); if (!date) return;
+  const event = prompt('Event description:'); if (!event) return;
+  const status = prompt('Status (done / current / future):') || 'future';
+  D.timeline.push({id:Date.now(),date,event,status});
+  populateTimeline(); saveLocal();
+}
+function editTL(i) {
+  const t = D.timeline[i];
+  const nd = prompt('Date:', t.date); if (nd===null) return;
+  const ne = prompt('Event:', t.event); if (ne===null) return;
+  const ns = prompt('Status (done/current/future):', t.status) || t.status;
+  D.timeline[i] = {...t,date:nd,event:ne,status:ns};
+  populateTimeline(); saveLocal(); toast('Timeline updated!');
+}
+function deleteTL(i) {
+  if (!confirm('Delete this milestone?')) return;
+  D.timeline.splice(i,1); populateTimeline(); saveLocal();
+}
+
+// ═══════════════════════════════════════════════════════════
+// PHOTOS
+// ═══════════════════════════════════════════════════════════
+function deletePhoto(id) {
+  if (!confirm('Delete this photo?')) return;
+  D.photos = D.photos.filter(p=>p.id!==id);
+  populatePhotos(); saveLocal(); toast('Photo removed', '#c0392b');
+}
+function editPhoto(id) {
+  const p = D.photos.find(x=>x.id===id); if (!p) return;
+  const nt = prompt('Caption:', p.title); if (nt===null) return;
+  const nd = prompt('Description:', p.desc); if (nd===null) return;
+  p.title = nt; p.desc = nd;
+  populatePhotos(); saveLocal(); toast('Photo updated!');
+}
+
+// ═══════════════════════════════════════════════════════════
+// MESSAGES & SUBS
+// ═══════════════════════════════════════════════════════════
+function deleteMessage(i) {
+  if (!confirm('Delete this message?')) return;
+  D.messages.splice(i,1); populateMessages(); saveLocal();
+}
+function deleteSub(i) {
+  if (!confirm('Unsubscribe this person?')) return;
+  D.subscribers.splice(i,1); populateSubs(); saveLocal();
+  document.getElementById('ds-subs').textContent = D.subscribers.length;
+}
+function deleteCity(i) {
+  D.mapBoundaries.cities.splice(i,1); populateAreaList(); saveLocal();
+}
+function addCity() {
+  const name = get('new-city-name').trim();
+  const lat  = parseFloat(get('new-city-lat'));
+  const lng  = parseFloat(get('new-city-lng'));
+  if (!name || isNaN(lat) || isNaN(lng)) { toast('Please enter name, lat, and lng', '#c0392b'); return; }
+  D.mapBoundaries.cities.push({name,lat,lng,type:'city'});
+  set('new-city-name',''); set('new-city-lat',''); set('new-city-lng','');
+  populateAreaList(); addCityMarker({name,lat,lng}); saveLocal(); toast(`${name} added to map!`);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN MAP
+// ═══════════════════════════════════════════════════════════
+function initAdminMap() {
+  if (adminMap) return;
+  const el = document.getElementById('admin-map');
+  if (!el) return;
+
+  adminMap = L.map('admin-map',{zoomControl:true,scrollWheelZoom:true,attributionControl:false});
+  adminLayer = adminLayers.road.addTo(adminMap);
+
+  // Drawn items layer
+  drawnItems       = new L.FeatureGroup().addTo(adminMap);
+  areaLayerGroup   = new L.FeatureGroup().addTo(adminMap);
+
+  // Draw control
+  const drawControl = new L.Control.Draw({
+    edit: { featureGroup: drawnItems, edit:true, remove:true },
+    draw: {
+      polygon:   { shapeOptions:{color:'#1A2744',fillColor:'rgba(201,168,76,0.15)',fillOpacity:1}, showArea:false },
+      polyline:  false, rectangle: false, circle: false,
+      marker:    { icon: makeAdminCurrentIcon() },
+      circlemarker: false
+    }
+  });
+  adminMap.addControl(drawControl);
+
+  // Draw events
+  adminMap.on(L.Draw.Event.CREATED, function(e) {
+    const layer = e.layer;
+    drawnItems.addLayer(layer);
+    if (e.layerType === 'polygon') {
+      const coords = layer.getLatLngs()[0].map(ll=>[ll.lat,ll.lng]);
+      const use = confirm('Use this as the MISSION BOUNDARY?\n\nClick Cancel to assign as an AREA boundary instead.');
+      if (use) {
+        D.mapBoundaries.missionBoundary = coords;
+        document.getElementById('boundary-json').value = JSON.stringify(coords);
+        toast('Mission boundary set! Save Map Data to keep.');
+      } else {
+        const aname = prompt('Which area is this boundary for? (area name)');
+        if (aname) {
+          const idx = D.mapBoundaries.areas.findIndex(a=>a.name.toLowerCase()===aname.toLowerCase());
+          if (idx>=0) { D.mapBoundaries.areas[idx].boundary = coords; toast(`Boundary set for ${aname}!`); }
+          else { toast('Area not found. Add the area first.', '#c0392b'); }
+        }
+      }
+    }
+  });
+
+  // Click to move current pin
+  adminMap.on('click', function(e) {
+    D.location.lat = Math.round(e.latlng.lat*10000)/10000;
+    D.location.lng = Math.round(e.latlng.lng*10000)/10000;
+    set('loc-lat', D.location.lat); set('loc-lng', D.location.lng);
+    if (adminPinMarker) adminMap.removeLayer(adminPinMarker);
+    adminPinMarker = L.marker([D.location.lat,D.location.lng],{icon:makeAdminCurrentIcon()})
+      .addTo(adminMap)
+      .bindPopup(`<b>📍 ${D.location.city}</b>`).openPopup();
+    toast('Pin moved! Save Map Data to keep.');
+  });
+
+  // Load existing data onto map
+  loadAdminMapData();
+  adminMap.setView([D.location.lat, D.location.lng], 7);
+  populateAreaList();
+
+  // Populate location fields
+  set('loc-city', D.location.city); set('loc-state', D.location.state);
+  set('loc-desc', D.location.areaDescription);
+  set('loc-lat',  D.location.lat); set('loc-lng', D.location.lng);
+}
+
+function loadAdminMapData() {
+  const mb = D.mapBoundaries;
+  // Mission boundary
+  if (mb.missionBoundary && mb.missionBoundary.length > 2) {
+    missionBoundaryLayer = L.polygon(mb.missionBoundary,{color:'#1A2744',weight:2.5,fillColor:'rgba(201,168,76,0.1)',fillOpacity:1,dashArray:'5,4'}).addTo(adminMap);
+  }
+  // Areas
+  refreshAdminMapAreas();
+  // Cities
+  mb.cities.forEach(c => addCityMarker(c));
+  // Current pin
+  adminPinMarker = L.marker([D.location.lat,D.location.lng],{icon:makeAdminCurrentIcon(),draggable:true})
+    .addTo(adminMap)
+    .bindPopup(`<b>📍 ${D.location.city}</b>`);
+  adminPinMarker.on('dragend', function(e) {
+    const p = e.target.getLatLng();
+    D.location.lat = Math.round(p.lat*10000)/10000;
+    D.location.lng = Math.round(p.lng*10000)/10000;
+    set('loc-lat',D.location.lat); set('loc-lng',D.location.lng);
+    toast('Pin dragged! Save Map Data to keep.');
+  });
+}
+
+function refreshAdminMapAreas() {
+  if (areaLayerGroup) areaLayerGroup.clearLayers();
+  D.mapBoundaries.areas.forEach(a => {
+    if (a.boundary && a.boundary.length>2) {
+      L.polygon(a.boundary,{color:AREA_COLORS[a.status]||'#999',weight:2,fillColor:AREA_COLORS[a.status],fillOpacity:.18}).addTo(areaLayerGroup);
+    }
+    const icon = a.status==='current' ? makeAdminCurrentIcon() : L.divIcon({html:`<div style="width:13px;height:13px;border-radius:50%;background:${AREA_COLORS[a.status]};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>`,iconSize:[13,13],iconAnchor:[6,6],className:''});
+    L.marker([a.lat,a.lng],{icon}).addTo(areaLayerGroup).bindPopup(`<b>${a.name}</b><br><small>${a.status}</small>`);
+  });
+}
+
+function addCityMarker(c) {
+  if (!adminMap) return;
+  const icon = L.divIcon({html:`<div style="width:7px;height:7px;border-radius:50%;background:#2E3F6E;border:1.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>`,iconSize:[7,7],iconAnchor:[3,3],className:''});
+  L.marker([c.lat,c.lng],{icon}).addTo(adminMap).bindPopup(`<b>${c.name}</b>`);
+}
+
+function makeAdminCurrentIcon() {
+  return L.divIcon({html:`<div style="width:20px;height:20px;border-radius:50%;background:#C9A84C;border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,.4);"></div>`,iconSize:[20,20],iconAnchor:[10,10],className:''});
+}
+
+function adminSetLayer(type, btn) {
+  if (!adminMap) return;
+  document.querySelectorAll('.layer-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  adminMap.removeLayer(adminLayer);
+  adminLayer = adminLayers[type].addTo(adminMap);
+}
+
+function importBoundary() {
+  try {
+    const raw = get('boundary-json').trim();
+    const coords = JSON.parse(raw);
+    if (!Array.isArray(coords) || !Array.isArray(coords[0])) throw new Error('Bad format');
+    D.mapBoundaries.missionBoundary = coords;
+    if (missionBoundaryLayer) adminMap.removeLayer(missionBoundaryLayer);
+    missionBoundaryLayer = L.polygon(coords,{color:'#1A2744',weight:2.5,fillColor:'rgba(201,168,76,0.1)',fillOpacity:1,dashArray:'5,4'}).addTo(adminMap);
+    adminMap.fitBounds(missionBoundaryLayer.getBounds());
+    saveLocal(); toast('Mission boundary imported! ✅');
+  } catch(e) { toast('Invalid JSON format. Expected [[lat,lng],[lat,lng],…]', '#c0392b'); }
+}
+
+function clearMissionBoundary() {
+  if (!confirm('Clear the mission boundary?')) return;
+  D.mapBoundaries.missionBoundary = [];
+  if (missionBoundaryLayer) { adminMap.removeLayer(missionBoundaryLayer); missionBoundaryLayer=null; }
+  set('boundary-json',''); saveLocal(); toast('Boundary cleared');
+}
+
+function updatePinLabel() {
+  D.location.city = get('loc-city');
+  if (adminPinMarker) adminPinMarker.setPopupContent(`<b>📍 ${D.location.city}</b>`);
+}
+
+function selectArea(i) { document.querySelectorAll('.area-row').forEach((r,j)=>r.classList.toggle('cur',j===i)); }
+function addArea() { editingAreaIdx = null; ['am-name','am-start','am-end'].forEach(id=>set(id,'')); set('am-lat',''); set('am-lng',''); document.getElementById('area-modal').classList.add('on'); }
+function editArea(i,e) { e.stopPropagation(); editingAreaIdx=i; const a=D.mapBoundaries.areas[i]; set('am-name',a.name); set('am-status',a.status); set('am-lat',a.lat); set('am-lng',a.lng); set('am-start',a.startDate||''); set('am-end',a.endDate||''); document.getElementById('area-modal').classList.add('on'); }
+function closeAreaModal() { document.getElementById('area-modal').classList.remove('on'); editingAreaIdx=null; }
+
+// ═══════════════════════════════════════════════════════════
+// GITHUB PUSH
+// ═══════════════════════════════════════════════════════════
+async function pushToGitHub() {
+  if (!GH.token || !GH.user || !GH.repo) {
+    toast('Configure GitHub settings first! (GitHub / Publish panel)', '#c0392b');
+    sw('github', document.querySelector('[onclick*=github]')); return;
+  }
+  const msg = get('gh-commit-msg') || ('Update mission data — ' + new Date().toLocaleDateString());
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(D, null, 2))));
+  log('Pushing to GitHub…');
+  updateGHStatus('pushing');
+
+  try {
+    // Get current file SHA (needed for update)
+    const headers = { 'Authorization':'token '+GH.token, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' };
+    const branch = GH.branch || 'main';
+    let sha = null;
+    try {
+      const getRes = await fetch(`https://api.github.com/repos/${GH.user}/${GH.repo}/contents/${DATA_PATH}?ref=${branch}`, {headers});
+      if (getRes.ok) { const d=await getRes.json(); sha=d.sha; log('Got current file SHA ✅'); }
+      else { log('File does not exist yet — will create it.'); }
+    } catch(e) { log('Could not get SHA (will try create): '+e.message); }
+
+    // Push
+    const body = { message:msg, content, branch };
+    if (sha) body.sha = sha;
+    const putRes = await fetch(`https://api.github.com/repos/${GH.user}/${GH.repo}/contents/${DATA_PATH}`, {method:'PUT',headers,body:JSON.stringify(body)});
+    const putData = await putRes.json();
+
+    if (putRes.ok) {
+      log('✅ Successfully pushed to GitHub!');
+      log('Commit: ' + putData.commit?.sha?.slice(0,7));
+      log('Site will update at: https://' + GH.user + '.github.io/' + GH.repo);
+      updateGHStatus('ok');
+      toast('🎉 Pushed to GitHub! Site updating…');
+    } else {
+      log('❌ Push failed: ' + putData.message);
+      updateGHStatus('err');
+      toast('GitHub push failed: ' + putData.message, '#c0392b');
+    }
+  } catch(e) {
+    log('❌ Network error: ' + e.message);
+    updateGHStatus('err');
+    toast('GitHub error: ' + e.message, '#c0392b');
+  }
+}
+
+const DATA_PATH = 'data.json';
+
+function updateGHStatus(state) {
+  const el = document.getElementById('gh-status');
+  if (state==='ok' || (GH.user && GH.repo && GH.token && !state)) {
+    el.textContent = '🟢 ' + (GH.user||'') + '/' + (GH.repo||'');
+    el.className = 'github-status ok';
+  } else if (state==='err') {
+    el.textContent = '🔴 Push failed'; el.className = 'github-status err';
+  } else if (state==='pushing') {
+    el.textContent = '🟡 Pushing…'; el.className = 'github-status';
+  } else if (GH.user && GH.repo && !GH.token) {
+    el.textContent = '🟡 Token missing'; el.className = 'github-status';
+  } else {
+    el.textContent = '⚪ GitHub not configured'; el.className = 'github-status';
+  }
+}
+
+function log(msg) {
+  const el = document.getElementById('push-log');
+  if (el) el.innerHTML += msg + '<br>';
+  console.log('[GH]', msg);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════
+function changePassword() {
+  const cur = get('cur-pw'), np = get('new-pw'), cp = get('conf-pw');
+  const stored = localStorage.getItem(PW_KEY) || 'mission2024';
+  if (cur !== stored) { toast('Current password incorrect', '#c0392b'); return; }
+  if (!np)            { toast('New password cannot be empty', '#c0392b'); return; }
+  if (np !== cp)      { toast('Passwords do not match', '#c0392b'); return; }
+  localStorage.setItem(PW_KEY, np);
+  ['cur-pw','new-pw','conf-pw'].forEach(id=>set(id,''));
+  toast('Password updated! 🔐');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════
+function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  const stored = localStorage.getItem(PW_KEY) || 'mission2024';
+  if (pw === stored) {
+    document.getElementById('loginScreen').classList.add('gone');
+    document.body.classList.add('authed');
+    init();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+function logout() {
+  document.body.classList.remove('authed');
+  document.getElementById('loginScreen').classList.remove('gone');
+  document.getElementById('pwInput').value = '';
+  document.getElementById('loginErr').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// PANEL SWITCHING
+// ═══════════════════════════════════════════════════════════
+const panelTitles = {dash:'Dashboard',profile:'Profile & About Me',progress:'Mission Progress',map:'Mission Map Editor',updates:'Weekly Updates',photos:'Photo Gallery',scripture:'Scripture & Inspiration',timeline:'Mission Timeline',github:'GitHub / Publish',settings:'Settings',messages:'Messages',subs:'Subscribers'};
+function sw(id, el) {
+  document.querySelectorAll('.apanel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.si').forEach(s=>s.classList.remove('on'));
+  document.getElementById('ap-'+id).classList.add('on');
+  if (el) el.classList.add('on');
+  document.getElementById('page-title').textContent = panelTitles[id]||id;
+  if (id==='map') setTimeout(initAdminMap, 200);
+}
+
+// ═══════════════════════════════════════════════════════════
+// RANGE SLIDERS
+// ═══════════════════════════════════════════════════════════
+function rv(el, badgeId, fmt) {
+  const v = parseInt(el.value);
+  el.style.setProperty('--rv', v+'%');
+  document.getElementById(badgeId).textContent = fmt(v);
+}
+function rvGoal(el) {
+  const v = parseInt(el.value);
+  el.style.setProperty('--rv', Math.round(v/12*100)+'%');
+  document.getElementById('rv-goal').textContent = v + ' / 12';
+}
+function setRange(id, val, badgeId, fmt) {
+  const el = document.getElementById(id); if (!el) return;
+  el.value = val; el.style.setProperty('--rv', val+'%');
+  document.getElementById(badgeId).textContent = fmt(val);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+function closeModal() { document.getElementById('edit-modal').classList.remove('on'); }
+document.getElementById('edit-modal').addEventListener('click',e=>{if(e.target===document.getElementById('edit-modal'))closeModal();});
+document.getElementById('area-modal').addEventListener('click',e=>{if(e.target===document.getElementById('area-modal'))closeAreaModal();});
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+let toastT;
+function toast(msg, color='#2a7a4a') {
+  clearTimeout(toastT);
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color;
+  t.classList.add('on');
+  toastT = setTimeout(()=>t.classList.remove('on'), 3400);
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function get(id)    { return document.getElementById(id)?.value || ''; }
+function set(id,v)  { const el=document.getElementById(id); if(el) el.value=v; }
+function formatDate(s) {
+  if (!s) return new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  return new Date(s).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+}
+
+document.getElementById('pwInput').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
