@@ -1,5 +1,5 @@
 """
-A simple PySide6 GUI for generating QR codes.
+A simple GUI for generating QR codes.
 """
 import sys
 from pathlib import Path
