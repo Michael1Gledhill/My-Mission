@@ -1,0 +1,15 @@
+# GitHub Pages configuration for Elder Gledhill's Mission Site
+# This file tells GitHub Pages how to build the site
+
+title: "Elder Gledhill's Mission"
+description: "Follow Elder Michael Gledhill's mission for The Church of Jesus Christ of Latter-day Saints in the Idaho Idaho Falls Mission."
+url: ""  # Will be set automatically by GitHub Pages
+
+# Exclude admin files from Jekyll processing (not needed since we use .nojekyll, but good practice)
+exclude:
+  - README.md
+  - "*.sh"
+
+# Allow data.json to be served as-is
+include:
+  - data.json
