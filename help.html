@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deployment Setup Guide – Elder Gledhill's Mission Site</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#C9A84C;--gold-light:#F0D898;--navy:#1A2744;--navy-light:#2E3F6E;
+  --cream:#FAF6EE;--white:#fff;--green:#2a7a4a;--green-bg:#d4edda;
+  --red:#c0392b;--text:#2C2C2C;--muted:#6b7280;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--text);padding-bottom:60px;}
+.hdr{background:var(--navy);padding:28px 40px;color:white;}
+.hdr h1{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--gold-light);margin-bottom:4px;}
+.hdr p{color:rgba(255,255,255,0.6);font-size:0.88rem;}
+.wrap{max-width:860px;margin:0 auto;padding:36px 24px;}
+
+/* Progress bar */
+.progress-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.progress-hdr h2{font-family:'Playfair Display',serif;color:var(--navy);font-size:1.1rem;}
+.progress-hdr span{font-size:0.78rem;color:var(--muted);font-weight:700;}
+.progress-track{background:#e4e0d8;border-radius:99px;height:10px;margin-bottom:32px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--navy),var(--gold));transition:width 0.5s ease;width:0%;}
+
+/* Sections */
+.section{margin-bottom:32px;}
+.section-title{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:10px;}
+.section-desc{font-size:0.84rem;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+
+/* Steps */
+.step{background:var(--white);border-radius:12px;box-shadow:0 3px 16px rgba(26,39,68,0.09);margin-bottom:12px;overflow:hidden;transition:box-shadow 0.2s;}
+.step.done{box-shadow:0 3px 16px rgba(42,122,74,0.15);}
+.step-hd{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;user-select:none;}
+.step-check{width:28px;height:28px;border-radius:50%;border:2.5px solid #d0ccc4;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;transition:all 0.2s;background:var(--white);}
+.step.done .step-check{background:var(--green);border-color:var(--green);color:white;}
+.step-num{font-size:0.68rem;font-weight:900;letter-spacing:1px;color:var(--muted);width:20px;text-align:center;flex-shrink:0;}
+.step.done .step-num{color:var(--green);}
+.step-title{font-weight:700;font-size:0.9rem;color:var(--navy);flex:1;}
+.step.done .step-title{color:var(--green);}
+.step-tag{font-size:0.66rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;text-transform:uppercase;}
+.tag-req{background:#fde8e8;color:var(--red);}
+.tag-once{background:var(--gold-light);color:var(--navy);}
+.tag-opt{background:#e8f0fe;color:#1a56db;}
+.step-body{padding:0 20px 18px 62px;font-size:0.84rem;line-height:1.75;color:var(--text);}
+.step-body p{margin-bottom:10px;}
+.step-body p:last-child{margin-bottom:0;}
+.step-body code{background:#f0ece4;padding:2px 7px;border-radius:4px;font-family:monospace;font-size:0.82rem;color:var(--navy);}
+.step-body pre{background:#1A2744;color:#F0D898;padding:14px 16px;border-radius:8px;font-family:monospace;font-size:0.8rem;line-height:1.6;overflow-x:auto;margin:10px 0;}
+.step-body ol,.step-body ul{padding-left:18px;margin:8px 0;}
+.step-body li{margin-bottom:6px;}
+.step-body a{color:var(--navy);font-weight:700;}
+.step-body .note{background:var(--gold-light);color:var(--navy);padding:10px 14px;border-radius:7px;font-size:0.8rem;margin:10px 0;border-left:4px solid var(--gold);}
+.step-body .warn{background:#fde8e8;color:var(--red);padding:10px 14px;border-radius:7px;font-size:0.8rem;margin:10px 0;border-left:4px solid var(--red);}
+.step-body input[type=text]{width:100%;padding:8px 12px;border:2px solid #e0ddd6;border-radius:7px;font-family:'Lato',sans-serif;font-size:0.84rem;outline:none;margin-top:4px;}
+.step-body input:focus{border-color:var(--gold);}
+.mark-done{display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:white;border:none;padding:8px 16px;border-radius:7px;font-family:'Lato',sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;margin-top:12px;transition:background 0.18s;}
+.mark-done:hover{background:var(--navy-light);}
+.step.done .mark-done{background:var(--green);}
+
+/* File list */
+.file-list{display:grid;gap:8px;margin:12px 0;}
+.file-item{display:flex;align-items:center;gap:12px;background:var(--cream);border-radius:8px;padding:10px 14px;}
+.file-icon{font-size:1.2rem;}
+.file-name{font-family:monospace;font-weight:700;color:var(--navy);font-size:0.88rem;}
+.file-desc{font-size:0.76rem;color:var(--muted);}
+.file-size{font-size:0.7rem;color:var(--muted);margin-left:auto;white-space:nowrap;}
+
+/* Done banner */
+.done-banner{display:none;background:linear-gradient(135deg,var(--green),#3a9e6e);border-radius:14px;padding:32px;text-align:center;color:white;margin-top:32px;}
+.done-banner h2{font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:8px;}
+.done-banner p{color:rgba(255,255,255,0.8);margin-bottom:18px;}
+.done-banner a{background:white;color:var(--green);padding:11px 22px;border-radius:8px;font-weight:700;text-decoration:none;font-size:0.9rem;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>✝ Deployment Setup Guide</h1>
+  <p>Elder Gledhill's Mission Site — Complete these steps before going live on GitHub Pages</p>
+</div>
+
+<div class="wrap">
+  <div class="progress-hdr">
+    <h2>Setup Progress</h2>
+    <span id="progress-text">0 of 10 steps complete</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+
+  <!-- ══ YOUR FILES ══ -->
+  <div class="section">
+    <div class="section-title">📁 Files in This Package</div>
+    <div class="section-desc">These are the 7 files you need to upload to GitHub. Every one of them is included in your download.</div>
+    <div class="file-list">
+      <div class="file-item"><span class="file-icon">🌐</span><div><div class="file-name">index.html</div><div class="file-desc">Public website — Home, Updates, Photos, About, Contact pages</div></div><span class="file-size">~56 KB</span></div>
+      <div class="file-item"><span class="file-icon">⚙️</span><div><div class="file-name">admin.html</div><div class="file-desc">Admin panel — edit everything, push to GitHub</div></div><span class="file-size">~76 KB</span></div>
+      <div class="file-item"><span class="file-icon">📊</span><div><div class="file-name">data.json</div><div class="file-desc">All site content — posts, photos, scripture, stats, map</div></div><span class="file-size">~12 KB</span></div>
+      <div class="file-item"><span class="file-icon">🚫</span><div><div class="file-name">.nojekyll</div><div class="file-desc">Tells GitHub Pages not to process files with Jekyll (required)</div></div><span class="file-size">empty</span></div>
+      <div class="file-item"><span class="file-icon">⚙️</span><div><div class="file-name">_config.yml</div><div class="file-desc">GitHub Pages configuration file</div></div><span class="file-size">&lt;1 KB</span></div>
+      <div class="file-item"><span class="file-icon">🔍</span><div><div class="file-name">404.html</div><div class="file-desc">Custom "page not found" page</div></div><span class="file-size">&lt;2 KB</span></div>
+      <div class="file-item"><span class="file-icon">📖</span><div><div class="file-name">README.md</div><div class="file-desc">Documentation shown on your GitHub repository page</div></div><span class="file-size">~4 KB</span></div>
+    </div>
+  </div>
+
+  <!-- ══ BEFORE UPLOADING ══ -->
+  <div class="section">
+    <div class="section-title">✏️ Before You Upload — Edit Two Lines</div>
+    <div class="section-desc">Open <code>index.html</code> in any text editor (Notepad, TextEdit, VS Code) and find these two lines near the bottom of the file. Change them to your actual GitHub username and repo name.</div>
+
+    <div class="step" id="s1">
+      <div class="step-hd" onclick="toggleStep('s1')">
+        <div class="step-check">✓</div>
+        <div class="step-num">01</div>
+        <div class="step-title">Edit index.html — set your GitHub username and repo name</div>
+        <span class="step-tag tag-req">Required</span>
+      </div>
+      <div class="step-body">
+        <p>Open <code>index.html</code> in a text editor. Press <strong>Ctrl+F</strong> (or Cmd+F on Mac) and search for <code>CHANGE THIS</code>. You'll find two lines:</p>
+        <pre>const GITHUB_USER = 'your-username';   // ← CHANGE THIS
+const GITHUB_REPO = 'mission-site';    // ← CHANGE THIS</pre>
+        <p>Change <code>'your-username'</code> to your actual GitHub username, and <code>'mission-site'</code> to whatever you name your repository. For example:</p>
+        <pre>const GITHUB_USER = 'mikegledhill';
+const GITHUB_REPO = 'mission-site';</pre>
+        <p>Save the file. That's the only code edit you ever need to make.</p>
+        <button class="mark-done" onclick="markDone('s1')">✓ Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GITHUB SETUP ══ -->
+  <div class="section">
+    <div class="section-title">🐙 GitHub Setup</div>
+    <div class="section-desc">Create a repository and enable GitHub Pages. This is where your site will live — for free, forever.</div>
+
+    <div class="step" id="s2">
+      <div class="step-hd" onclick="toggleStep('s2')">
+        <div class="step-check">✓</div>
+        <div class="step-num">02</div>
+        <div class="step-title">Create a GitHub account (if you don't have one)</div>
+        <span class="step-tag tag-once">One-time</span>
+      </div>
+      <div class="step-body">
+        <p>Go to <a href="https://github.com" target="_blank">github.com</a> and sign up for a free account. Use a family email address you check regularly.</p>
+        <p>Your GitHub username will be part of your site URL — e.g. <code>mikegledhill.github.io/mission-site</code> — so pick something clean and easy to share.</p>
+        <button class="mark-done" onclick="markDone('s2')">✓ Done</button>
+      </div>
+    </div>
+
+    <div class="step" id="s3">
+      <div class="step-hd" onclick="toggleStep('s3')">
+        <div class="step-check">✓</div>
+        <div class="step-num">03</div>
+        <div class="step-title">Create a new GitHub repository</div>
+        <span class="step-tag tag-req">Required</span>
+      </div>
+      <div class="step-body">
+        <ol>
+          <li>Go to <a href="https://github.com/new" target="_blank">github.com/new</a></li>
+          <li>Repository name: <code>mission-site</code> (or any name — just match it in step 1)</li>
+          <li>Set to <strong>Public</strong> (required for free GitHub Pages)</li>
+          <li>Leave everything else unchecked</li>
+          <li>Click <strong>Create repository</strong></li>
+        </ol>
+        <div class="note">💡 The repo name becomes part of your URL: <code>username.github.io/repo-name</code></div>
+        <button class="mark-done" onclick="markDone('s3')">✓ Done</button>
+      </div>
+    </div>
+
+    <div class="step" id="s4">
+      <div class="step-hd" onclick="toggleStep('s4')">
+        <div class="step-check">✓</div>
+        <div class="step-num">04</div>
+        <div class="step-title">Upload all 7 files to the repository</div>
+        <span class="step-tag tag-req">Required</span>
+      </div>
+      <div class="step-body">
+        <ol>
+          <li>In your new repo, click <strong>Add file → Upload files</strong></li>
+          <li>Drag and drop all 7 files into the upload area:<br><code>index.html, admin.html, data.json, .nojekyll, _config.yml, 404.html, README.md</code></li>
+          <li>At the bottom, write a commit message: <code>Initial upload</code></li>
+          <li>Click <strong>Commit changes</strong></li>
+        </ol>
+        <div class="warn">⚠️ Make sure <code>.nojekyll</code> is included — it's a hidden file (starts with a dot). On Mac, press Cmd+Shift+. to show hidden files before dragging.</div>
+        <button class="mark-done" onclick="markDone('s4')">✓ Done</button>
+      </div>
+    </div>
+
+    <div class="step" id="s5">
+      <div class="step-hd" onclick="toggleStep('s5')">
+        <div class="step-check">✓</div>
+        <div class="step-num">05</div>
+        <div class="step-title">Enable GitHub Pages</div>
+        <span class="step-tag tag-req">Required</span>
+      </div>
+      <div class="step-body">
+        <ol>
+          <li>In your repo, click <strong>Settings</strong> (top tab)</li>
+          <li>In the left sidebar, click <strong>Pages</strong></li>
+          <li>Under <strong>Source</strong>, select <strong>Deploy from a branch</strong></li>
+          <li>Choose branch: <strong>main</strong>, folder: <strong>/ (root)</strong></li>
+          <li>Click <strong>Save</strong></li>
+        </ol>
+        <p>Wait 1–3 minutes. Your site will be live at:</p>
+        <pre>https://YOUR-USERNAME.github.io/mission-site/</pre>
+        <div class="note">💡 GitHub will show a green checkmark under Settings → Pages when it's live. You can also check the Actions tab to see the deployment progress.</div>
+        <button class="mark-done" onclick="markDone('s5')">✓ Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN SETUP ══ -->
+  <div class="section">
+    <div class="section-title">🔐 Admin Panel Setup</div>
+    <div class="section-desc">Set up the admin panel so you can edit and publish changes directly from the browser.</div>
+
+    <div class="step" id="s6">
+      <div class="step-hd" onclick="toggleStep('s6')">
+        <div class="step-check">✓</div>
+        <div class="step-num">06</div>
+        <div class="step-title">Get a GitHub Personal Access Token (PAT)</div>
+        <span class="step-tag tag-once">One-time</span>
+      </div>
+      <div class="step-body">
+        <p>This token lets the admin panel push changes directly to GitHub from your browser. It's stored only in your browser — never in any file on the internet.</p>
+        <ol>
+          <li>Go to: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+          <li>Click <strong>Generate new token → Generate new token (classic)</strong></li>
+          <li>Note/name: <code>Mission Site Admin</code></li>
+          <li>Expiration: <strong>No expiration</strong> (or 1 year — you'll need to renew it)</li>
+          <li>Scopes: check <strong>repo</strong> (the top checkbox under repo)</li>
+          <li>Scroll down → click <strong>Generate token</strong></li>
+          <li>Copy the token immediately — GitHub won't show it again!</li>
+        </ol>
+        <div class="warn">⚠️ Treat your PAT like a password. Don't share it or put it in any file. It is stored only in your browser's localStorage.</div>
+        <div class="note">Your token will look like: <code>ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></div>
+        <label style="display:block;font-size:.72rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--navy);margin-bottom:4px;margin-top:12px;">Paste your token here for safekeeping (only stored in this page, never sent anywhere):</label>
+        <input type="text" id="pat-store" placeholder="ghp_..." oninput="localStorage.setItem('guide_pat',this.value)">
+        <button class="mark-done" onclick="markDone('s6')">✓ Done</button>
+      </div>
+    </div>
+
+    <div class="step" id="s7">
+      <div class="step-hd" onclick="toggleStep('s7')">
+        <div class="step-check">✓</div>
+        <div class="step-num">07</div>
+        <div class="step-title">Configure the Admin Panel with GitHub credentials</div>
+        <span class="step-tag tag-once">One-time</span>
+      </div>
+      <div class="step-body">
+        <ol>
+          <li>Visit your live site: <code>https://YOUR-USERNAME.github.io/mission-site/admin.html</code></li>
+          <li>Log in with the default password: <code>mission2024</code></li>
+          <li>In the left sidebar, click <strong>🐙 GitHub / Publish</strong></li>
+          <li>Fill in:
+            <ul>
+              <li><strong>GitHub Username</strong>: your username</li>
+              <li><strong>Repository Name</strong>: <code>mission-site</code></li>
+              <li><strong>Branch</strong>: <code>main</code></li>
+              <li><strong>Personal Access Token</strong>: paste your token from step 6</li>
+            </ul>
+          </li>
+          <li>Click <strong>Save GitHub Config</strong></li>
+        </ol>
+        <p>The status indicator at the top should turn green: <code>🟢 username/mission-site</code></p>
+        <button class="mark-done" onclick="markDone('s7')">✓ Done</button>
+      </div>
+    </div>
+
+    <div class="step" id="s8">
+      <div class="step-hd" onclick="toggleStep('s8')">
+        <div class="step-check">✓</div>
+        <div class="step-num">08</div>
+        <div class="step-title">Change the admin password</div>
+        <span class="step-tag tag-req">Required</span>
+      </div>
+      <div class="step-body">
+        <p>The default password is <code>mission2024</code>. Change it before sharing the site.</p>
+        <ol>
+          <li>In the admin panel, go to <strong>⚙️ Settings</strong></li>
+          <li>Under <strong>Change Admin Password</strong>:</li>
+          <li>Current password: <code>mission2024</code></li>
+          <li>Enter and confirm your new password</li>
+          <li>Click <strong>Update Password</strong></li>
+        </ol>
+        <div class="note">💡 The password is stored in your browser's localStorage. If you clear your browser data, it resets to <code>mission2024</code>. Write it down somewhere safe!</div>
+        <button class="mark-done" onclick="markDone('s8')">✓ Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FINAL SETUP ══ -->
+  <div class="section">
+    <div class="section-title">🗺️ Final Customization</div>
+
+    <div class="step" id="s9">
+      <div class="step-hd" onclick="toggleStep('s9')">
+        <div class="step-check">✓</div>
+        <div class="step-num">09</div>
+        <div class="step-title">Draw your mission boundary on the map</div>
+        <span class="step-tag tag-req">Required</span>
+      </div>
+      <div class="step-body">
+        <ol>
+          <li>In the admin panel, go to <strong>🗺️ Mission Map Editor</strong></li>
+          <li>Click the <strong>polygon tool</strong> (pentagon icon in the left toolbar)</li>
+          <li>Click point-by-point around the edge of your mission territory</li>
+          <li>Double-click to close the shape</li>
+          <li>When prompted "Use as mission boundary?" — click <strong>OK</strong></li>
+          <li>Click <strong>Save All Map Data</strong></li>
+          <li>Click <strong>🐙 Push to GitHub</strong></li>
+        </ol>
+        <p>Alternatively, if you have a KML or GeoJSON file of the mission boundary, paste the coordinates array in the <strong>Import GeoJSON</strong> box.</p>
+        <button class="mark-done" onclick="markDone('s9')">✓ Done</button>
+      </div>
+    </div>
+
+    <div class="step" id="s10">
+      <div class="step-hd" onclick="toggleStep('s10')">
+        <div class="step-check">✓</div>
+        <div class="step-num">10</div>
+        <div class="step-title">Do a test publish — push your first real update</div>
+        <span class="step-tag tag-req">Required</span>
+      </div>
+      <div class="step-body">
+        <ol>
+          <li>In the admin panel, go to <strong>📝 Weekly Updates</strong></li>
+          <li>Write your first update (or use the placeholder Week 47)</li>
+          <li>Click <strong>🚀 Publish Update</strong></li>
+          <li>Click <strong>🐙 Push to GitHub</strong> in the top toolbar</li>
+          <li>Enter a commit message like <code>Add week 47 update</code></li>
+          <li>Watch the green status indicator confirm success</li>
+          <li>Wait 1–2 minutes, then visit your live site to confirm it updated</li>
+        </ol>
+        <div class="note">💡 After this, every Monday you just: write the update → click Publish → click Push to GitHub. That's it!</div>
+        <button class="mark-done" onclick="markDone('s10')">✓ Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optional steps -->
+  <div class="section">
+    <div class="section-title">⭐ Optional Extras</div>
+    <div class="section-desc">Nice to have but not required to go live.</div>
+
+    <div class="step" id="s11">
+      <div class="step-hd" onclick="toggleStep('s11')">
+        <div class="step-check">✓</div>
+        <div class="step-num">—</div>
+        <div class="step-title">Set up a custom domain (e.g. eldergledhill.com)</div>
+        <span class="step-tag tag-opt">Optional</span>
+      </div>
+      <div class="step-body">
+        <p>If you want a custom domain instead of <code>username.github.io/mission-site</code>:</p>
+        <ol>
+          <li>Buy a domain from Namecheap, GoDaddy, or Google Domains (~$12/year)</li>
+          <li>In your domain registrar, add these DNS records:</li>
+        </ol>
+        <pre>Type: A      Name: @    Value: 185.199.108.153
+Type: A      Name: @    Value: 185.199.109.153
+Type: A      Name: @    Value: 185.199.110.153
+Type: A      Name: @    Value: 185.199.111.153
+Type: CNAME  Name: www  Value: YOUR-USERNAME.github.io</pre>
+        <ol start="3">
+          <li>In GitHub repo → Settings → Pages → Custom domain → enter your domain</li>
+          <li>Check "Enforce HTTPS"</li>
+        </ol>
+        <button class="mark-done" onclick="markDone('s11')">✓ Done</button>
+      </div>
+    </div>
+
+    <div class="step" id="s12">
+      <div class="step-hd" onclick="toggleStep('s12')">
+        <div class="step-check">✓</div>
+        <div class="step-num">—</div>
+        <div class="step-title">Share the site with family and friends</div>
+        <span class="step-tag tag-opt">Optional</span>
+      </div>
+      <div class="step-body">
+        <p>Once live, share your URL with everyone! Suggested message:</p>
+        <pre>Hey! I set up a website to follow along with Elder Gledhill's mission. 
+You can see his weekly updates, photos, the mission map, 
+and even send him a letter:
+https://YOUR-USERNAME.github.io/mission-site
+
+You can also subscribe to get his weekly letter by email!</pre>
+        <button class="mark-done" onclick="markDone('s12')">✓ Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DONE BANNER -->
+  <div class="done-banner" id="done-banner">
+    <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+    <h2>You're All Set!</h2>
+    <p>Elder Gledhill's mission site is live on GitHub Pages. Every Monday, just log into the admin panel, write the weekly update, and push to GitHub. The site updates automatically!</p>
+    <a href="index.html" target="_blank">👁️ View the Live Site</a>
+  </div>
+
+</div>
+
+<script>
+// Restore saved state
+const saved = JSON.parse(localStorage.getItem('guide_state') || '{}');
+const steps = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12'];
+steps.forEach(id => { if (saved[id]) { document.getElementById(id)?.classList.add('done'); } });
+const pat = localStorage.getItem('guide_pat');
+if (pat && document.getElementById('pat-store')) document.getElementById('pat-store').value = pat;
+updateProgress();
+
+function toggleStep(id) {
+  const el = document.getElementById(id);
+  const body = el.querySelector('.step-body');
+  body.style.display = body.style.display === 'none' ? '' : 'none';
+}
+
+function markDone(id) {
+  document.getElementById(id).classList.add('done');
+  saved[id] = true;
+  localStorage.setItem('guide_state', JSON.stringify(saved));
+  updateProgress();
+}
+
+function updateProgress() {
+  const required = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10'];
+  const done = required.filter(id => document.getElementById(id)?.classList.contains('done'));
+  const pct = Math.round(done.length / required.length * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = done.length + ' of ' + required.length + ' steps complete';
+  if (done.length === required.length) {
+    document.getElementById('done-banner').style.display = 'block';
+    document.getElementById('done-banner').scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+
+// Open steps by default (first 2 only)
+document.querySelectorAll('.step-body').forEach((b,i) => { if (i > 1) b.style.display = 'none'; });
+</script>
+</body>
+</html>
