@@ -3,1373 +3,1344 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Elder Gledhill's Mission</title>
+<title>Admin - Elder Gledhill Mission Site</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <style>
 :root{
-  --gold:#C9A84C;--gold-light:#F0D898;--gold-dim:rgba(201,168,76,.15);
-  --navy:#1A2744;--navy-mid:#243256;--navy-light:#2E3F6E;
-  --cream:#FAF6EE;--white:#fff;--text:#2C2C2C;--muted:#6b7280;
-  --green:#2a7a4a;--green-bg:#d4edda;--red:#c0392b;--red-bg:#fdecea;
-  --sb:240px;--r:12px;--sh:0 4px 24px rgba(26,39,68,.11);
+  --gold:#C9A84C;--gold-l:#F0D898;--gold-dim:rgba(201,168,76,.15);
+  --navy:#1A2744;--navy2:#243256;--navy3:#2E3F6E;
+  --cream:#FAF6EE;--white:#fff;--txt:#2C2C2C;--muted:#6b7280;
+  --green:#2a7a4a;--gbg:#d4edda;--red:#c0392b;--rbg:#fdecea;
+  --sb:230px;--r:12px;--sh:0 4px 20px rgba(26,39,68,.1);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Lato',sans-serif;background:#eeece8;color:var(--text);min-height:100vh;display:flex;}
+body{font-family:'Lato',sans-serif;background:#eceae6;color:var(--txt);min-height:100vh;}
 
-/* ── LOGIN ── */
+/* LOGIN */
 .login-screen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;}
 .login-screen.gone{display:none;}
-.login-box{background:var(--white);border-radius:16px;padding:38px;width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);}
-.login-logo{width:54px;height:54px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 13px;}
-.login-box h2{font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:5px;}
-.login-box p{font-size:.78rem;color:var(--muted);margin-bottom:18px;}
-.login-hint{font-size:.68rem;color:#bbb;margin-top:10px;}
-.login-err{color:var(--red);font-size:.76rem;margin-top:6px;display:none;}
+.login-box{background:var(--white);border-radius:16px;padding:36px;width:320px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+.login-logo{width:52px;height:52px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 12px;}
+.login-box h2{font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:4px;}
+.login-box p{font-size:.76rem;color:var(--muted);margin-bottom:16px;}
+.login-hint{font-size:.66rem;color:#bbb;margin-top:9px;}
+.login-err{color:var(--red);font-size:.74rem;margin-top:5px;display:none;}
 
-/* ── SIDEBAR ── */
-.sidebar{width:var(--sb);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:200;overflow-y:auto;transform:translateX(-100%);transition:transform .3s;}
-body.authed .sidebar{transform:translateX(0);}
-.sb-brand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
-.sb-logo{width:36px;height:36px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:8px;}
-.sb-title{font-family:'Playfair Display',serif;color:#fff;font-size:.9rem;line-height:1.3;}
-.sb-title span{color:var(--gold-light);}
-.sb-sub{font-size:.62rem;color:rgba(255,255,255,.3);margin-top:2px;}
-.sb-section{padding:12px 10px 3px;font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.28);font-weight:700;}
-.si{display:flex;align-items:center;gap:8px;padding:8px 17px;cursor:pointer;color:rgba(255,255,255,.58);font-size:.82rem;font-weight:700;transition:all .16s;border-left:3px solid transparent;background:none;border-top:none;border-right:none;border-bottom:none;width:100%;text-align:left;font-family:'Lato',sans-serif;}
+/* LAYOUT */
+.admin-wrap{display:none;}
+.admin-wrap.on{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sb);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:200;overflow-y:auto;}
+.sb-brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-logo{width:34px;height:34px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:7px;}
+.sb-title{font-family:'Playfair Display',serif;color:#fff;font-size:.86rem;line-height:1.3;}
+.sb-title span{color:var(--gold-l);}
+.sb-sub{font-size:.6rem;color:rgba(255,255,255,.28);margin-top:1px;}
+.sb-section{padding:11px 10px 3px;font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.26);font-weight:700;}
+.si{display:flex;align-items:center;gap:7px;padding:8px 15px;cursor:pointer;color:rgba(255,255,255,.56);font-size:.8rem;font-weight:700;transition:all .15s;border-left:3px solid transparent;background:none;border-top:none;border-right:none;border-bottom:none;width:100%;text-align:left;font-family:'Lato',sans-serif;}
 .si:hover{background:rgba(255,255,255,.05);color:#fff;}
-.si.on{background:rgba(201,168,76,.14);color:var(--gold-light);border-left-color:var(--gold);}
-.si-ico{font-size:.9rem;width:17px;text-align:center;flex-shrink:0;}
-.sb-footer{margin-top:auto;padding:13px 15px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px;}
-.sb-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border-radius:7px;font-weight:700;font-size:.76rem;cursor:pointer;border:none;font-family:'Lato',sans-serif;transition:background .18s;}
-.sb-preview{background:var(--gold);color:var(--navy);}.sb-preview:hover{background:var(--gold-light);}
-.sb-close{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);}.sb-close:hover{background:rgba(255,255,255,.14);color:#fff;}
+.si.on{background:rgba(201,168,76,.14);color:var(--gold-l);border-left-color:var(--gold);}
+.si-ico{font-size:.88rem;width:16px;text-align:center;flex-shrink:0;}
+.sb-footer{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:5px;}
+.sb-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:8px;border-radius:6px;font-weight:700;font-size:.74rem;cursor:pointer;border:none;font-family:'Lato',sans-serif;transition:background .18s;}
+.sb-preview{background:var(--gold);color:var(--navy);}.sb-preview:hover{background:var(--gold-l);}
+.sb-close{background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);}.sb-close:hover{background:rgba(255,255,255,.12);color:#fff;}
 
-/* ── MAIN ── */
-.main{margin-left:var(--sb);flex:1;display:flex;flex-direction:column;min-height:100vh;width:calc(100% - var(--sb));}
-body.authed .main{display:flex;}
-body:not(.authed) .main{display:none;}
+/* MAIN */
+.main{margin-left:var(--sb);flex:1;display:flex;flex-direction:column;min-height:100vh;}
 
-/* ── TOPBAR ── */
-.topbar{background:var(--white);padding:0 26px;height:58px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 0 #e8e4de;position:sticky;top:0;z-index:100;}
-.topbar-title{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);}
-.topbar-right{display:flex;gap:7px;align-items:center;}
-.github-status{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;background:var(--cream);}
-.github-status.ok{color:var(--green);background:var(--green-bg);}
-.github-status.err{color:var(--red);background:var(--red-bg);}
-
-/* ── CONTENT ── */
-.content{padding:26px;flex:1;overflow-y:auto;}
-.apanel{display:none;}.apanel.on{display:block;}
-
-/* ── CARDS ── */
-.card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:24px;margin-bottom:18px;}
-.card-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--navy);margin-bottom:3px;}
-.card-desc{font-size:.74rem;color:var(--muted);margin-bottom:14px;}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
-@media(max-width:780px){.g2,.g3{grid-template-columns:1fr;}}
-
-/* ── FORMS ── */
-.fg{margin-bottom:14px;}
-.fg:last-child{margin-bottom:0;}
-label{display:block;font-size:.7rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--navy);margin-bottom:4px;}
-input,textarea,select{width:100%;padding:9px 12px;border:2px solid #e0ddd6;border-radius:7px;font-family:'Lato',sans-serif;font-size:.87rem;color:var(--text);background:var(--white);outline:none;transition:border-color .2s;appearance:none;}
-input:focus,textarea:focus,select:focus{border-color:var(--gold);}
-textarea{resize:vertical;min-height:90px;}
-.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-@media(max-width:540px){.fr,.fr3{grid-template-columns:1fr;}}
-
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:7px;border:none;font-family:'Lato',sans-serif;font-weight:700;font-size:.81rem;cursor:pointer;transition:all .18s;letter-spacing:.3px;}
-.bn{background:var(--navy);color:#fff;}.bn:hover{background:var(--navy-light);}
-.bg{background:var(--gold);color:var(--navy);}.bg:hover{background:var(--gold-light);}
-.br{background:var(--red-bg);color:var(--red);}.br:hover{background:var(--red);color:#fff;}
-.bfull{width:100%;justify-content:center;}
-.btn:disabled{opacity:.5;cursor:not-allowed;}
-
-/* ── GITHUB PUSH BTN ── */
-.push-btn{background:linear-gradient(135deg,#24292e,#444d56);color:#fff;border:none;padding:9px 18px;border-radius:7px;font-family:'Lato',sans-serif;font-weight:700;font-size:.81rem;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .18s;}
-.push-btn:hover{background:linear-gradient(135deg,#444d56,#6a737d);}
+/* TOPBAR */
+.topbar{background:var(--white);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 0 #e8e4de;position:sticky;top:0;z-index:100;}
+.topbar-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--navy);}
+.topbar-right{display:flex;gap:6px;align-items:center;}
+.gh-status{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:5px;background:var(--cream);}
+.gh-status.ok{color:var(--green);background:var(--gbg);}
+.gh-status.err{color:var(--red);background:var(--rbg);}
+.push-btn{background:#24292e;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-family:'Lato',sans-serif;font-weight:700;font-size:.76rem;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .18s;}
+.push-btn:hover{background:#444d56;}
 .push-btn:disabled{opacity:.5;cursor:not-allowed;}
 
-/* ── RANGE ── */
-input[type=range]{width:100%;height:5px;-webkit-appearance:none;appearance:none;background:linear-gradient(to right,var(--navy) 0%,var(--navy) var(--rv,58%),#e0ddd6 var(--rv,58%),#e0ddd6 100%);border-radius:99px;outline:none;cursor:pointer;border:none;padding:0;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--gold);border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.22);cursor:pointer;}
-.rv-badge{display:inline-block;background:var(--navy);color:var(--gold-light);font-family:'Playfair Display',serif;font-size:1.2rem;padding:5px 14px;border-radius:7px;margin-bottom:7px;}
-.range-labels{display:flex;justify-content:space-between;font-size:.66rem;color:var(--muted);margin-top:4px;}
+/* CONTENT */
+.content{padding:22px;flex:1;}
+.apanel{display:none;}.apanel.on{display:block;}
 
-/* ── TOGGLE ── */
-.tog-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0ece4;}
+/* CARDS */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:22px;margin-bottom:16px;}
+.card-title{font-family:'Playfair Display',serif;font-size:.97rem;color:var(--navy);margin-bottom:2px;}
+.card-desc{font-size:.72rem;color:var(--muted);margin-bottom:12px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+@media(max-width:760px){.g2,.g3{grid-template-columns:1fr;}}
+
+/* FORMS */
+.fg{margin-bottom:12px;}
+.fg:last-child{margin-bottom:0;}
+label{display:block;font-size:.68rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--navy);margin-bottom:3px;}
+input,textarea,select{width:100%;padding:8px 11px;border:2px solid #e0ddd6;border-radius:6px;font-family:'Lato',sans-serif;font-size:.85rem;color:var(--txt);background:var(--white);outline:none;transition:border-color .2s;appearance:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--gold);}
+textarea{resize:vertical;min-height:85px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:500px){.fr,.fr3{grid-template-columns:1fr;}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:8px 14px;border-radius:6px;border:none;font-family:'Lato',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .18s;}
+.bn{background:var(--navy);color:#fff;}.bn:hover{background:var(--navy3);}
+.bgold{background:var(--gold);color:var(--navy);}.bgold:hover{background:var(--gold-l);}
+.bred{background:var(--rbg);color:var(--red);}.bred:hover{background:var(--red);color:#fff;}
+.bfull{width:100%;justify-content:center;}
+
+/* RANGE */
+input[type=range]{width:100%;height:5px;-webkit-appearance:none;appearance:none;background:linear-gradient(to right,var(--navy) 0%,var(--navy) var(--rv,50%),#e0ddd6 var(--rv,50%),#e0ddd6 100%);border-radius:99px;outline:none;cursor:pointer;border:none;padding:0;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.22);cursor:pointer;}
+.rv-badge{display:inline-block;background:var(--navy);color:var(--gold-l);font-family:'Playfair Display',serif;font-size:1.1rem;padding:4px 13px;border-radius:6px;margin-bottom:6px;}
+.range-labels{display:flex;justify-content:space-between;font-size:.64rem;color:var(--muted);margin-top:3px;}
+
+/* TOGGLE */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0ece4;}
 .tog-row:last-child{border-bottom:none;}
-.tog-l{font-weight:700;font-size:.84rem;color:var(--navy);}
-.tog-s{font-size:.72rem;color:var(--muted);}
-.tog{position:relative;width:40px;height:21px;flex-shrink:0;margin-left:10px;}
+.tog-l{font-weight:700;font-size:.82rem;color:var(--navy);}
+.tog-s{font-size:.7rem;color:var(--muted);}
+.tog{position:relative;width:38px;height:20px;flex-shrink:0;margin-left:9px;}
 .tog input{opacity:0;width:0;height:0;position:absolute;}
 .tog-tr{position:absolute;inset:0;background:#ccc;border-radius:99px;cursor:pointer;transition:background .18s;}
 .tog input:checked+.tog-tr{background:var(--navy);}
-.tog-tr::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:white;border-radius:50%;transition:transform .18s;}
-.tog input:checked+.tog-tr::before{transform:translateX(19px);}
+.tog-tr::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%;transition:transform .18s;}
+.tog input:checked+.tog-tr::before{transform:translateX(18px);}
 
-/* ── POST ROWS ── */
-.prow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f0ece4;}
+/* POST ROWS */
+.prow{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid #f0ece4;}
 .prow:last-child{border-bottom:none;}
-.pnum{background:var(--cream);color:var(--navy);font-family:'Playfair Display',serif;font-size:.8rem;font-weight:700;width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pnum{background:var(--cream);color:var(--navy);font-family:'Playfair Display',serif;font-size:.78rem;font-weight:700;width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .pi{flex:1;}
-.pi-t{font-weight:700;font-size:.83rem;color:var(--navy);}
-.pi-m{font-size:.7rem;color:var(--muted);margin-top:1px;}
-.pacts{display:flex;gap:4px;}
-.abtn{padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-family:'Lato',sans-serif;font-size:.7rem;font-weight:700;transition:all .16s;}
+.pi-t{font-weight:700;font-size:.81rem;color:var(--navy);}
+.pi-m{font-size:.68rem;color:var(--muted);margin-top:1px;}
+.pacts{display:flex;gap:3px;}
+.abtn{padding:4px 9px;border-radius:4px;border:none;cursor:pointer;font-family:'Lato',sans-serif;font-size:.68rem;font-weight:700;transition:all .15s;}
 .ae{background:var(--gold-dim);color:var(--navy);}.ae:hover{background:var(--gold);}
-.ad{background:var(--red-bg);color:var(--red);}.ad:hover{background:var(--red);color:#fff;}
+.ad{background:var(--rbg);color:var(--red);}.ad:hover{background:var(--red);color:#fff;}
 
-/* ── STATS STRIP ── */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
-@media(max-width:660px){.stats{grid-template-columns:1fr 1fr;}}
-.sc{background:var(--white);border-radius:var(--r);padding:16px;box-shadow:var(--sh);text-align:center;}
-.sv{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--navy);line-height:1;}
-.sl{font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
-.sch{font-size:.68rem;color:var(--green);margin-top:2px;font-weight:700;}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:640px){.stats{grid-template-columns:1fr 1fr;}}
+.sc{background:var(--white);border-radius:var(--r);padding:14px;box-shadow:var(--sh);text-align:center;}
+.sv{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--navy);line-height:1;}
+.sl{font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.sch{font-size:.66rem;color:var(--green);margin-top:2px;font-weight:700;}
 
-/* ── PHOTO GRID ADMIN ── */
-.pa-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;}
-@media(max-width:700px){.pa-grid{grid-template-columns:repeat(3,1fr);}}
-.pa-item{aspect-ratio:1;border-radius:7px;overflow:hidden;position:relative;cursor:pointer;transition:transform .18s;}
-.pa-item:hover{transform:scale(1.04);}
-.pa-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;}
-.pa-ov{position:absolute;inset:0;background:rgba(26,39,68,0);display:flex;align-items:center;justify-content:center;gap:4px;transition:background .18s;}
-.pa-item:hover .pa-ov{background:rgba(26,39,68,.65);}
-.pa-ov button{opacity:0;transform:translateY(4px);transition:all .16s;padding:4px 8px;border-radius:5px;border:none;cursor:pointer;font-size:.68rem;font-weight:700;background:white;color:var(--navy);}
-.pa-item:hover .pa-ov button{opacity:1;transform:translateY(0);}
-.pa-add{aspect-ratio:1;border-radius:7px;border:2px dashed #c8c4bc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;background:rgba(255,255,255,.5);transition:all .18s;}
-.pa-add:hover{border-color:var(--gold);background:var(--gold-dim);}
+/* PHOTO UPLOAD */
+.photo-upload-area{border:3px dashed #d0ccc4;border-radius:10px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.6);position:relative;}
+.photo-upload-area:hover{border-color:var(--gold);background:var(--gold-dim);}
+.photo-upload-area.drag-over{border-color:var(--gold);background:var(--gold-dim);transform:scale(1.01);}
+.upload-file-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.photo-preview-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px;}
+@media(max-width:600px){.photo-preview-grid{grid-template-columns:repeat(3,1fr);}}
+.photo-preview-item{aspect-ratio:1;border-radius:7px;overflow:hidden;position:relative;cursor:pointer;}
+.photo-preview-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-preview-emoji{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;}
+.photo-preview-overlay{position:absolute;inset:0;background:rgba(26,39,68,0);display:flex;align-items:center;justify-content:center;gap:4px;transition:background .18s;}
+.photo-preview-item:hover .photo-preview-overlay{background:rgba(26,39,68,.65);}
+.photo-preview-overlay button{opacity:0;transform:translateY(4px);transition:all .16s;padding:3px 7px;border-radius:4px;border:none;cursor:pointer;font-size:.66rem;font-weight:700;background:white;color:var(--navy);}
+.photo-preview-item:hover .photo-preview-overlay button{opacity:1;transform:translateY(0);}
+.photo-add-btn{aspect-ratio:1;border-radius:7px;border:2px dashed #c8c4bc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;background:rgba(255,255,255,.5);transition:all .18s;position:relative;}
+.photo-add-btn:hover{border-color:var(--gold);background:var(--gold-dim);}
+.photo-add-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;}
 
-/* ── MAP EDITOR ── */
-#admin-map{height:500px;z-index:1;}
-.map-editor-controls{background:var(--white);border:2px solid var(--navy);border-radius:8px;padding:14px;margin-bottom:14px;}
-.map-editor-controls h4{font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:10px;font-size:.95rem;}
-.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
-.draw-btn{padding:7px 14px;border-radius:6px;border:2px solid #e0ddd6;background:var(--white);font-family:'Lato',sans-serif;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--muted);}
-.draw-btn:hover,.draw-btn.active{border-color:var(--navy);background:var(--navy);color:#fff;}
-.draw-btn.danger{border-color:var(--red);color:var(--red);}.draw-btn.danger:hover{background:var(--red);color:#fff;}
-.layer-btns{display:flex;gap:6px;margin-bottom:10px;}
-.layer-btn{padding:5px 12px;border-radius:20px;border:2px solid #e0ddd6;background:var(--white);font-family:'Lato',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--muted);}
-.layer-btn.on,.layer-btn:hover{border-color:var(--navy);background:var(--navy);color:#fff;}
-.geojson-box{background:var(--cream);border-radius:6px;padding:10px;font-size:.72rem;font-family:monospace;color:var(--navy);max-height:100px;overflow-y:auto;margin-top:8px;word-break:break-all;}
-.area-list{display:flex;flex-direction:column;gap:6px;}
-.area-row{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:7px;background:var(--cream);border:2px solid transparent;cursor:pointer;transition:all .16s;}
+/* MAP */
+#admin-map{height:450px;z-index:1;}
+.map-toolbar{display:flex;gap:5px;flex-wrap:wrap;padding:8px 10px;background:var(--white);border-bottom:1px solid #f0ece4;}
+.map-tb-btn{padding:4px 11px;border-radius:20px;border:2px solid #e0ddd6;background:var(--white);font-family:'Lato',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--muted);}
+.map-tb-btn.on,.map-tb-btn:hover{border-color:var(--navy);background:var(--navy);color:#fff;}
+.area-row{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:7px;background:var(--cream);border:2px solid transparent;cursor:pointer;transition:all .16s;margin-bottom:5px;}
 .area-row.cur{border-color:var(--gold);background:var(--gold-dim);}
-.area-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.area-rname{font-weight:700;font-size:.83rem;color:var(--navy);flex:1;}
-.area-stat{font-size:.68rem;padding:2px 7px;border-radius:20px;font-weight:700;}
-.as-done{background:var(--green-bg);color:var(--green);}
+.area-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.area-rname{font-weight:700;font-size:.8rem;color:var(--navy);flex:1;}
+.area-stat{font-size:.66rem;padding:2px 7px;border-radius:20px;font-weight:700;}
+.as-done{background:var(--gbg);color:var(--green);}
 .as-cur{background:var(--gold-dim);color:var(--navy);}
 .as-fut{background:#f0f0f0;color:#999;}
 
-/* ── MODAL ── */
+/* GH CONFIG */
+.gh-config{background:linear-gradient(135deg,#24292e,#444d56);border-radius:var(--r);padding:18px;color:#fff;margin-bottom:16px;}
+.gh-config h4{font-family:'Playfair Display',serif;color:var(--gold-l);margin-bottom:10px;}
+.gh-config label{color:rgba(255,255,255,.65);}
+.gh-config input{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);color:#fff;}
+.gh-config input:focus{border-color:var(--gold);}
+.gh-config input::placeholder{color:rgba(255,255,255,.3);}
+
+/* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(10,15,30,.65);z-index:1000;align-items:center;justify-content:center;}
 .modal-bg.on{display:flex;}
-.modal{background:var(--white);border-radius:var(--r);width:90%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:mIn .22s ease;}
+.modal{background:var(--white);border-radius:var(--r);width:90%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 56px rgba(0,0,0,.35);animation:mIn .2s ease;}
 @keyframes mIn{from{transform:scale(.94);opacity:0;}to{transform:scale(1);opacity:1;}}
-.modal-hd{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;}
-.modal-hd h3{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);}
+.modal-hd{padding:18px 22px 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-hd h3{font-family:'Playfair Display',serif;font-size:1rem;color:var(--navy);}
 .modal-close{background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);}
-.modal-body{padding:16px 24px 20px;}
-.modal-ft{padding:0 24px 18px;display:flex;gap:7px;justify-content:flex-end;}
+.modal-body{padding:14px 22px 18px;}
+.modal-ft{padding:0 22px 16px;display:flex;gap:6px;justify-content:flex-end;}
 
-/* ── TOAST ── */
-.toast{position:fixed;bottom:18px;right:18px;background:var(--green);color:#fff;padding:10px 15px;border-radius:8px;font-weight:700;font-size:.81rem;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;display:flex;align-items:center;gap:6px;}
+/* TOAST */
+.toast{position:fixed;bottom:16px;right:16px;background:var(--green);color:#fff;padding:9px 14px;border-radius:7px;font-weight:700;font-size:.78rem;box-shadow:0 8px 20px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;}
 .toast.on{transform:translateY(0);opacity:1;}
-
-/* ── GH PUSH PANEL ── */
-.gh-config{background:linear-gradient(135deg,#24292e,#444d56);border-radius:var(--r);padding:20px;color:#fff;margin-bottom:18px;}
-.gh-config h4{font-family:'Playfair Display',serif;color:var(--gold-light);margin-bottom:12px;}
-.gh-config label{color:rgba(255,255,255,.7);}
-.gh-config input{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;}
-.gh-config input:focus{border-color:var(--gold);}
-.gh-config input::placeholder{color:rgba(255,255,255,.35);}
-
-.dropzone{border:2px dashed #c8c4bc;border-radius:9px;padding:32px;text-align:center;cursor:pointer;background:rgba(255,255,255,.5);transition:all .18s;}
-.dropzone:hover{border-color:var(--gold);background:var(--gold-dim);}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <div class="login-logo">✝</div>
+    <div class="login-logo">&#10011;</div>
     <h2>Admin Panel</h2>
-    <p>Elder Gledhill's Mission Site — Family Access Only</p>
-    <div class="fg"><label>Password</label><input type="password" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="login-err" id="loginErr">❌ Incorrect password</div>
-    <button class="btn bn bfull" style="margin-top:8px;" onclick="doLogin()">🔐 Sign In</button>
-    <div class="login-hint">Default: <b>mission2024</b> — change in Settings</div>
+    <p>Elder Gledhill's Mission Site &mdash; Family Access Only</p>
+    <div class="fg"><label>Password</label><input type="password" id="pwInput" placeholder="Enter password"></div>
+    <div class="login-err" id="loginErr">Incorrect password. Try again.</div>
+    <button class="btn bn bfull" style="margin-top:7px;" onclick="doLogin()">Sign In</button>
+    <div class="login-hint">Default password: <b>mission2024</b></div>
   </div>
 </div>
 
-<!-- SIDEBAR -->
-<nav class="sidebar">
-  <div class="sb-brand">
-    <div class="sb-logo">✝</div>
-    <div class="sb-title">Elder <span>Gledhill</span><br>Admin Panel</div>
-    <div class="sb-sub">Idaho Falls Mission</div>
-  </div>
-  <div class="sb-section">Overview</div>
-  <button class="si on" onclick="sw('dash',this)"><span class="si-ico">📊</span>Dashboard</button>
-  <div class="sb-section">Content</div>
-  <button class="si" onclick="sw('profile',this)"><span class="si-ico">👤</span>Profile &amp; Info</button>
-  <button class="si" onclick="sw('progress',this)"><span class="si-ico">📈</span>Mission Progress</button>
-  <button class="si" onclick="sw('map',this)"><span class="si-ico">🗺️</span>Mission Map Editor</button>
-  <button class="si" onclick="sw('updates',this)"><span class="si-ico">📝</span>Weekly Updates</button>
-  <button class="si" onclick="sw('photos',this)"><span class="si-ico">📷</span>Photos</button>
-  <button class="si" onclick="sw('scripture',this)"><span class="si-ico">📖</span>Scripture</button>
-  <button class="si" onclick="sw('timeline',this)"><span class="si-ico">📅</span>Timeline</button>
-  <div class="sb-section">Admin</div>
-  <button class="si" onclick="sw('github',this)"><span class="si-ico">🐙</span>GitHub / Publish</button>
-  <button class="si" onclick="sw('settings',this)"><span class="si-ico">⚙️</span>Settings</button>
-  <button class="si" onclick="sw('messages',this)"><span class="si-ico">💌</span>Messages</button>
-  <button class="si" onclick="sw('subs',this)"><span class="si-ico">🔔</span>Subscribers</button>
-  <div class="sb-footer">
-    <button class="sb-btn sb-preview" onclick="window.open('index.html','_blank')">👁️ View Live Site</button>
-    <button class="sb-btn sb-close" onclick="logout()">🚪 Sign Out</button>
-  </div>
-</nav>
-
-<!-- MAIN -->
-<div class="main">
-  <div class="topbar">
-    <div class="topbar-title" id="page-title">Overview Dashboard</div>
-    <div class="topbar-right">
-      <div class="github-status" id="gh-status">⚪ GitHub not configured</div>
-      <button class="push-btn" onclick="pushToGitHub()">🐙 Push to GitHub</button>
+<div class="admin-wrap" id="adminWrap">
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">&#10011;</div>
+      <div class="sb-title">Elder <span>Gledhill</span><br>Admin Panel</div>
+      <div class="sb-sub">Idaho Falls Mission</div>
     </div>
-  </div>
+    <div class="sb-section">Overview</div>
+    <button class="si on" onclick="sw('dash',this)"><span class="si-ico">&#128202;</span>Dashboard</button>
+    <div class="sb-section">Content</div>
+    <button class="si" onclick="sw('profile',this)"><span class="si-ico">&#128100;</span>Profile &amp; Info</button>
+    <button class="si" onclick="sw('progress',this)"><span class="si-ico">&#128200;</span>Mission Progress</button>
+    <button class="si" onclick="sw('map',this)"><span class="si-ico">&#128506;</span>Mission Map</button>
+    <button class="si" onclick="sw('updates',this)"><span class="si-ico">&#128221;</span>Weekly Updates</button>
+    <button class="si" onclick="sw('photos',this)"><span class="si-ico">&#128247;</span>Photos</button>
+    <button class="si" onclick="sw('scripture',this)"><span class="si-ico">&#128214;</span>Scripture</button>
+    <button class="si" onclick="sw('timeline',this)"><span class="si-ico">&#128197;</span>Timeline</button>
+    <div class="sb-section">Admin</div>
+    <button class="si" onclick="sw('github',this)"><span class="si-ico">&#128025;</span>GitHub / Publish</button>
+    <button class="si" onclick="sw('settings',this)"><span class="si-ico">&#9881;</span>Settings</button>
+    <button class="si" onclick="sw('messages',this)"><span class="si-ico">&#128140;</span>Messages</button>
+    <button class="si" onclick="sw('subs',this)"><span class="si-ico">&#128276;</span>Subscribers</button>
+    <div class="sb-footer">
+      <button class="sb-btn sb-preview" onclick="window.open('index.html','_blank')">View Live Site</button>
+      <button class="sb-btn sb-close" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
 
-  <div class="content">
-
-    <!-- ═══ DASHBOARD ═══ -->
-    <div class="apanel on" id="ap-dash">
-      <div class="stats" id="dash-stats">
-        <div class="sc"><div class="sv" id="ds-posts">47</div><div class="sl">Updates Posted</div><div class="sch">+1 this week</div></div>
-        <div class="sc"><div class="sv" id="ds-prog">58%</div><div class="sl">Mission Complete</div><div class="sch">14 of 24 months</div></div>
-        <div class="sc"><div class="sv" id="ds-subs">124</div><div class="sl">Subscribers</div><div class="sch">+8 this month</div></div>
-        <div class="sc"><div class="sv" id="ds-photos">10</div><div class="sl">Photos</div><div class="sch">+6 this week</div></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="gh-status" id="gh-status">GitHub not configured</div>
+        <button class="push-btn" id="pushBtn" onclick="pushToGitHub()">Push to GitHub</button>
       </div>
-      <div class="g2">
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="apanel on" id="ap-dash">
+        <div class="stats">
+          <div class="sc"><div class="sv" id="ds-posts">4</div><div class="sl">Updates</div><div class="sch">+1 this week</div></div>
+          <div class="sc"><div class="sv" id="ds-prog">58%</div><div class="sl">Mission Complete</div></div>
+          <div class="sc"><div class="sv" id="ds-subs">0</div><div class="sl">Subscribers</div></div>
+          <div class="sc"><div class="sv" id="ds-photos">10</div><div class="sl">Photos</div></div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-title">Quick Actions</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+              <button class="btn bn bfull" onclick="sw('updates',document.querySelector('[onclick*=updates]'))">Write This Week's Update</button>
+              <button class="btn bgold bfull" onclick="sw('photos',document.querySelector('[onclick*=photos]'))">Upload Photos</button>
+              <button class="btn bn bfull" onclick="sw('progress',document.querySelector('[onclick*=progress]'))">Update Progress Bars</button>
+              <button class="btn bn bfull" onclick="sw('scripture',document.querySelector('[onclick*=scripture]'))">Change Weekly Scripture</button>
+              <button class="push-btn bfull" onclick="pushToGitHub()">Push All Changes to GitHub</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent Messages</div>
+            <div id="dash-msgs"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="apanel" id="ap-profile">
         <div class="card">
-          <div class="card-title">Quick Actions</div>
-          <div style="display:flex;flex-direction:column;gap:7px;margin-top:12px;">
-            <button class="btn bn bfull" onclick="sw('updates',document.querySelector('[onclick*=updates]'))">✏️ Write This Week's Update</button>
-            <button class="btn bg bfull" onclick="sw('photos',document.querySelector('[onclick*=photos]'))">📷 Manage Photos</button>
-            <button class="btn bn bfull" onclick="sw('progress',document.querySelector('[onclick*=progress]'))">📈 Update Progress Bars</button>
-            <button class="btn bn bfull" onclick="sw('scripture',document.querySelector('[onclick*=scripture]'))">📖 Change Weekly Scripture</button>
-            <button class="push-btn bfull" onclick="pushToGitHub()">🐙 Publish All Changes to GitHub</button>
+          <div class="card-title">Missionary Profile</div>
+          <div class="card-desc">Appears on the About page and throughout the site.</div>
+          <div class="fr"><div class="fg"><label>First Name</label><input id="p-first"></div><div class="fg"><label>Last Name</label><input id="p-last"></div></div>
+          <div class="fr"><div class="fg"><label>Hometown</label><input id="p-hometown"></div><div class="fg"><label>Age</label><input type="number" id="p-age"></div></div>
+          <div class="fr"><div class="fg"><label>Mission Name</label><input id="p-mission"></div><div class="fg"><label>Mission President</label><input id="p-pres"></div></div>
+          <div class="fr"><div class="fg"><label>Start Date</label><input type="date" id="p-start"></div><div class="fg"><label>End Date</label><input type="date" id="p-end"></div></div>
+          <div class="fg"><label>Current Companion</label><input id="p-comp"></div>
+          <div class="fg"><label>Current Area</label><input id="p-area"></div>
+          <div class="fg"><label>College Plans</label><input id="p-college"></div>
+          <div class="fg"><label>Hobbies (comma separated)</label><input id="p-hobbies"></div>
+          <div class="fg"><label>Personal Bio</label><textarea id="p-bio" style="min-height:100px;"></textarea></div>
+          <div class="fg"><label>Testimony</label><textarea id="p-testimony" style="min-height:120px;"></textarea></div>
+          <button class="btn bgold" onclick="saveProfile()">Save Profile</button>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="apanel" id="ap-progress">
+        <div class="card">
+          <div class="card-title">Mission Progress Bars</div>
+          <div class="card-desc">Drag sliders to update the homepage progress bars.</div>
+          <div class="fg" style="margin-top:6px;">
+            <label>Overall Mission Progress</label>
+            <div class="rv-badge" id="rv-overall">58%</div>
+            <input type="range" min="0" max="100" id="r-overall" style="--rv:58%" oninput="rv(this,'rv-overall',function(v){return v+'%';})">
+            <div class="range-labels"><span>Jan 2024 (Start)</span><span>Jan 2026 (Done!)</span></div>
+          </div>
+          <div class="fg" style="margin-top:20px;">
+            <label>Current Area Progress</label>
+            <div class="rv-badge" id="rv-area">50%</div>
+            <input type="range" min="0" max="100" id="r-area" style="--rv:50%" oninput="rv(this,'rv-area',function(v){return v+'%';})">
+          </div>
+          <div class="fg" style="margin-top:20px;">
+            <label>This Week's Discussion Goal (target: 12)</label>
+            <div class="rv-badge" id="rv-goal">8 / 12</div>
+            <input type="range" min="0" max="12" id="r-goal" oninput="rvGoal(this)">
+          </div>
+          <button class="btn bgold" style="margin-top:8px;" onclick="saveProgress()">Save Progress</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Hero Banner Stats</div>
+          <div class="fr3">
+            <div class="fg"><label>Months Served</label><input type="number" id="s-months"></div>
+            <div class="fg"><label>Total Months</label><input type="number" id="s-total"></div>
+            <div class="fg"><label>Areas Served</label><input type="number" id="s-areas"></div>
+          </div>
+          <button class="btn bgold" onclick="saveStats()">Save Stats</button>
+        </div>
+      </div>
+
+      <!-- MAP -->
+      <div class="apanel" id="ap-map">
+        <div class="g2" style="align-items:start;">
+          <div>
+            <div class="card" style="padding:0;overflow:hidden;">
+              <div style="padding:12px 14px 9px;border-bottom:1px solid #f0ece4;">
+                <div class="card-title">Mission Map Editor</div>
+                <div class="card-desc" style="margin:0;">Draw boundaries, drag the pin, toggle map styles.</div>
+              </div>
+              <div class="map-toolbar">
+                <button class="map-tb-btn on" onclick="adminSetLayer('road',this)">Road</button>
+                <button class="map-tb-btn" onclick="adminSetLayer('satellite',this)">Satellite</button>
+                <button class="map-tb-btn" onclick="adminSetLayer('topo',this)">Terrain</button>
+              </div>
+              <div id="admin-map"></div>
+              <div style="padding:9px 12px;background:var(--cream);border-top:1px solid #f0ece4;font-size:.7rem;color:var(--muted);line-height:1.65;">
+                <b>Drawing tools (left toolbar):</b> Use the polygon tool to draw mission or area boundaries. Click point-by-point, double-click to close. Click the map to move the current location pin.
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-title">Current Location</div>
+              <div class="card-desc">Click anywhere on the map to move the pin, or type coordinates.</div>
+              <div class="fr"><div class="fg"><label>City</label><input id="loc-city" oninput="updatePinLabel()"></div><div class="fg"><label>State</label><input id="loc-state"></div></div>
+              <div class="fg"><label>Area Description</label><input id="loc-desc"></div>
+              <div class="fr"><div class="fg"><label>Latitude</label><input id="loc-lat" readonly style="background:#f8f6f0;"></div><div class="fg"><label>Longitude</label><input id="loc-lng" readonly style="background:#f8f6f0;"></div></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Mission Boundary</div>
+              <div class="card-desc">Paste a GeoJSON coordinate array or draw on the map.</div>
+              <div class="fg"><label>Paste coordinates [[lat,lng],...]</label><textarea id="boundary-json" style="min-height:70px;font-family:monospace;font-size:.7rem;" placeholder="[[43.5,-112.0],[44.0,-112.5],...]"></textarea></div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn bn" onclick="importBoundary()">Import</button>
+                <button class="btn bred" onclick="clearBoundary()">Clear</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Areas Served</div>
+              <div id="area-list"></div>
+              <button class="btn bn bfull" style="margin-top:8px;" onclick="addArea()">+ Add Area</button>
+            </div>
+            <button class="btn bgold bfull" onclick="saveMapData()">Save All Map Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPDATES -->
+      <div class="apanel" id="ap-updates">
+        <div class="card">
+          <div class="card-title">Write New Update</div>
+          <div class="card-desc">Publishes to the top of the Updates page.</div>
+          <div class="fr"><div class="fg"><label>Week Number</label><input type="number" id="nu-week" value="48"></div><div class="fg"><label>Date</label><input type="date" id="nu-date"></div></div>
+          <div class="fg"><label>Title</label><input id="nu-title" placeholder="e.g. A Week of Miracles"></div>
+          <div class="fg"><label>Location</label><input id="nu-loc" value="Idaho Falls, ID - West Area"></div>
+          <div class="fg"><label>Your Letter</label><textarea id="nu-body" style="min-height:150px;" placeholder="Dear family and friends,"></textarea></div>
+          <div class="fr"><div class="fg"><label>Scripture Text</label><input id="nu-verse" placeholder="And the Spirit shall be given..."></div><div class="fg"><label>Reference</label><input id="nu-ref" placeholder="D&amp;C 42:14"></div></div>
+          <div class="fg"><label>Tags (comma separated)</label><input id="nu-tags" placeholder="Teaching, Service, Zone Conference"></div>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <button class="btn bgold" onclick="publishPost()">Publish Update</button>
+            <button class="btn bn" onclick="toast('Draft saved locally')">Save Draft</button>
           </div>
         </div>
         <div class="card">
-          <div class="card-title">Recent Messages</div>
-          <div class="card-desc">From supporters via the Contact page</div>
-          <div id="dash-messages"></div>
+          <div class="card-title">All Updates</div>
+          <div id="admin-posts"></div>
         </div>
       </div>
-    </div>
 
-    <!-- ═══ PROFILE ═══ -->
-    <div class="apanel" id="ap-profile">
-      <div class="card">
-        <div class="card-title">Missionary Profile</div>
-        <div class="card-desc">Appears on the About page and throughout the site.</div>
-        <div class="fr">
-          <div class="fg"><label>First Name</label><input id="p-first"></div>
-          <div class="fg"><label>Last Name</label><input id="p-last"></div>
-        </div>
-        <div class="fr">
-          <div class="fg"><label>Hometown</label><input id="p-hometown"></div>
-          <div class="fg"><label>Age</label><input type="number" id="p-age"></div>
-        </div>
-        <div class="fr">
-          <div class="fg"><label>Mission Name</label><input id="p-mission"></div>
-          <div class="fg"><label>Mission President</label><input id="p-pres"></div>
-        </div>
-        <div class="fr">
-          <div class="fg"><label>Start Date</label><input type="date" id="p-start"></div>
-          <div class="fg"><label>End Date</label><input type="date" id="p-end"></div>
-        </div>
-        <div class="fg"><label>Current Companion</label><input id="p-comp"></div>
-        <div class="fg"><label>Current Area</label><input id="p-area"></div>
-        <div class="fg"><label>College Plans</label><input id="p-college"></div>
-        <div class="fg"><label>Hobbies (comma separated)</label><input id="p-hobbies"></div>
-        <div class="fg"><label>Personal Bio</label><textarea id="p-bio" style="min-height:110px;"></textarea></div>
-        <div class="fg"><label>Testimony</label><textarea id="p-testimony" style="min-height:130px;"></textarea></div>
-        <button class="btn bg" onclick="saveProfile()">💾 Save Profile</button>
-      </div>
-    </div>
-
-    <!-- ═══ PROGRESS ═══ -->
-    <div class="apanel" id="ap-progress">
-      <div class="card">
-        <div class="card-title">Mission Progress Bars</div>
-        <div class="card-desc">These update the homepage progress bars live.</div>
-        <div class="fg" style="margin-top:8px;">
-          <label>Overall Mission Progress</label>
-          <div class="rv-badge" id="rv-overall">58%</div>
-          <input type="range" min="0" max="100" id="r-overall" style="--rv:58%" oninput="rv(this,'rv-overall',v=>v+'%')">
-          <div class="range-labels"><span>Jan 2024 (Start)</span><span>Jan 2026 (Done!)</span></div>
-        </div>
-        <div class="fg" style="margin-top:22px;">
-          <label>Current Area Progress</label>
-          <div class="rv-badge" id="rv-area">50%</div>
-          <input type="range" min="0" max="100" id="r-area" style="--rv:50%" oninput="rv(this,'rv-area',v=>v+'%')">
-        </div>
-        <div class="fg" style="margin-top:22px;">
-          <label>This Week's Discussion Goal (target: 12)</label>
-          <div class="rv-badge" id="rv-goal">8 / 12</div>
-          <input type="range" min="0" max="12" id="r-goal" oninput="rvGoal(this)">
-        </div>
-        <button class="btn bg" style="margin-top:8px;" onclick="saveProgress()">💾 Save Progress</button>
-      </div>
-      <div class="card">
-        <div class="card-title">Hero Banner Stats</div>
-        <div class="card-desc">Numbers shown in the homepage hero banner.</div>
-        <div class="fr3">
-          <div class="fg"><label>Months Served</label><input type="number" id="s-months"></div>
-          <div class="fg"><label>Total Months</label><input type="number" id="s-total"></div>
-          <div class="fg"><label>Areas Served</label><input type="number" id="s-areas"></div>
-        </div>
-        <button class="btn bg" onclick="saveStats()">💾 Save Stats</button>
-      </div>
-    </div>
-
-    <!-- ═══ MAP EDITOR ═══ -->
-    <div class="apanel" id="ap-map">
-      <div class="g2" style="align-items:start;">
-        <div>
-          <div class="card" style="padding:0;overflow:hidden;">
-            <div style="padding:14px 16px 10px;border-bottom:1px solid #f0ece4;">
-              <div class="card-title">Interactive Map Editor</div>
-              <div class="card-desc" style="margin:0;">Draw boundaries, move the location pin, and set served areas.</div>
+      <!-- PHOTOS -->
+      <div class="apanel" id="ap-photos">
+        <div class="card">
+          <div class="card-title">Upload Photos</div>
+          <div class="card-desc">Select real photos from your device. They will be stored in data.json as base64 and pushed to GitHub.</div>
+          <div class="photo-upload-area" id="uploadArea">
+            <input type="file" accept="image/*" multiple onchange="handlePhotoFiles(this.files)" class="upload-file-input">
+            <div style="font-size:2rem;margin-bottom:7px;">&#128247;</div>
+            <div style="font-weight:700;color:var(--navy);font-size:.9rem;">Click here to select photos, or drag and drop</div>
+            <div style="font-size:.74rem;color:var(--muted);margin-top:3px;">JPG, PNG, HEIC &mdash; max 2MB each recommended (larger images may slow GitHub)</div>
+          </div>
+          <div class="fr" style="margin-top:12px;">
+            <div class="fg"><label>Add to Album</label>
+              <select id="ph-album">
+                <option>March 2025</option><option>Early 2025</option><option>2024</option><option value="__new__">+ New Album...</option>
+              </select>
             </div>
-            <!-- Map layer toggles -->
-            <div style="padding:8px 12px;background:var(--white);border-bottom:1px solid #f0ece4;display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="layer-btn on" onclick="adminSetLayer('road',this)">🗺 Road</button>
-              <button class="layer-btn" onclick="adminSetLayer('satellite',this)">🛰 Satellite</button>
-              <button class="layer-btn" onclick="adminSetLayer('topo',this)">🏔 Terrain</button>
-            </div>
-            <div id="admin-map"></div>
-            <!-- Drawing tools legend -->
-            <div style="padding:10px 14px;background:var(--cream);border-top:1px solid #f0ece4;font-size:.72rem;color:var(--muted);line-height:1.7;">
-              <b>How to use:</b><br>
-              🔵 <b>Draw Mission Boundary</b> → click the polygon tool → click points around the mission border → double-click to close.<br>
-              🟡 <b>Draw Area Boundary</b> → same method, then assign to an area below.<br>
-              📍 <b>Move Current Pin</b> → click anywhere on the map to relocate.<br>
-              ✏️ <b>Edit</b> → use the edit toolbar to adjust existing shapes.<br>
-              🗑 <b>Delete</b> → select shapes and delete.
+            <div class="fg"><label>New Album Name (if adding new)</label><input id="ph-new-album" placeholder="e.g. April 2025"></div>
+          </div>
+          <div id="upload-preview" style="display:none;margin-top:12px;">
+            <div style="font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:7px;">Photos ready to add:</div>
+            <div class="photo-preview-grid" id="upload-preview-grid"></div>
+            <button class="btn bgold" style="margin-top:10px;" onclick="confirmUploadPhotos()">Add These Photos to Gallery</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Photo Gallery</div>
+          <div class="card-desc">Hover a photo to edit caption or delete. Push to GitHub to publish changes.</div>
+          <div class="photo-preview-grid" id="photo-manage-grid">
+            <div class="photo-add-btn">
+              <span style="font-size:1.5rem;">&#43;</span>
+              <p style="font-size:.64rem;color:var(--muted);font-weight:700;">Add</p>
+              <input type="file" accept="image/*" multiple onchange="handlePhotoFiles(this.files)">
             </div>
           </div>
         </div>
-        <div>
-          <div class="card">
-            <div class="card-title">Current Location Pin</div>
-            <div class="card-desc">Click anywhere on the map to move the current location pin, or enter coordinates manually.</div>
-            <div class="fr">
-              <div class="fg"><label>City Name</label><input id="loc-city" oninput="updatePinLabel()"></div>
-              <div class="fg"><label>State</label><input id="loc-state"></div>
-            </div>
-            <div class="fg"><label>Area Description</label><input id="loc-desc"></div>
-            <div class="fr">
-              <div class="fg"><label>Latitude</label><input id="loc-lat" readonly style="background:#f8f6f0;"></div>
-              <div class="fg"><label>Longitude</label><input id="loc-lng" readonly style="background:#f8f6f0;"></div>
-            </div>
+      </div>
+
+      <!-- SCRIPTURE -->
+      <div class="apanel" id="ap-scripture">
+        <div class="card">
+          <div class="card-title">Weekly Scripture</div>
+          <div class="fg"><label>Scripture Text</label><textarea id="sc-text" style="min-height:75px;font-family:'Playfair Display',serif;font-style:italic;"></textarea></div>
+          <div class="fg"><label>Full Reference (e.g. Doctrine &amp; Covenants 42:14)</label><input id="sc-ref"></div>
+          <button class="btn bgold" onclick="saveScripture()">Update Scripture</button>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="apanel" id="ap-timeline">
+        <div class="card">
+          <div class="card-title">Mission Timeline</div>
+          <div class="card-desc">Edit milestones shown on the homepage.</div>
+          <div id="timeline-list"></div>
+          <button class="btn bn" style="margin-top:10px;" onclick="addTL()">+ Add Milestone</button>
+        </div>
+      </div>
+
+      <!-- GITHUB -->
+      <div class="apanel" id="ap-github">
+        <div class="gh-config">
+          <h4>GitHub Configuration</h4>
+          <div class="fr">
+            <div class="fg"><label>GitHub Username</label><input id="gh-user" placeholder="Michael1Gledhill"></div>
+            <div class="fg"><label>Repository Name</label><input id="gh-repo" placeholder="My-Mission"></div>
           </div>
+          <div class="fg"><label>Branch</label><input id="gh-branch" value="main"></div>
+          <div class="fg"><label>Personal Access Token (PAT)</label><input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>
+          <p style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:5px;">Token stored only in your browser's localStorage. Never sent anywhere except to GitHub's API.</p>
+          <button class="btn bgold" style="margin-top:9px;" onclick="saveGHConfig()">Save GitHub Config</button>
+        </div>
+        <div class="card">
+          <div class="card-title">How to Get a Personal Access Token</div>
+          <ol style="font-size:.81rem;line-height:1.9;color:var(--txt);padding-left:17px;margin-top:8px;">
+            <li>Go to <b>github.com &rarr; Settings &rarr; Developer Settings &rarr; Personal access tokens &rarr; Tokens (classic)</b></li>
+            <li>Click <b>"Generate new token (classic)"</b></li>
+            <li>Name: <b>Mission Site Admin</b> &mdash; Expiration: <b>No expiration</b></li>
+            <li>Check the <b>"repo"</b> scope (top checkbox under repo)</li>
+            <li>Click <b>Generate token</b> &mdash; copy it immediately</li>
+            <li>Paste it above and click Save GitHub Config</li>
+          </ol>
+        </div>
+        <div class="card">
+          <div class="card-title">Push Changes to GitHub</div>
+          <div class="card-desc">This commits your updated data.json to GitHub. The live site updates within 1-2 minutes.</div>
+          <div class="fg"><label>Commit Message</label><input id="gh-commit-msg" value="Update mission data"></div>
+          <button class="push-btn bfull" onclick="pushToGitHub()" style="margin-top:6px;">Push data.json to GitHub</button>
+          <div id="push-log" style="margin-top:10px;font-size:.72rem;color:var(--muted);font-family:monospace;background:var(--cream);border-radius:5px;padding:9px;min-height:36px;"></div>
+        </div>
+      </div>
 
-          <div class="card">
-            <div class="card-title">Mission Boundary</div>
-            <div class="card-desc">Drawn shape — paste GeoJSON or draw on map above. When you're happy with the boundary, click Save.</div>
-            <div class="fg">
-              <label>Import GeoJSON / KML coordinates</label>
-              <textarea id="boundary-json" style="min-height:80px;font-family:monospace;font-size:.72rem;" placeholder='Paste GeoJSON coordinates array: [[lat,lng],[lat,lng],…]'></textarea>
-            </div>
-            <div style="display:flex;gap:7px;">
-              <button class="btn bn" onclick="importBoundary()">📥 Import Boundary</button>
-              <button class="btn br" onclick="clearMissionBoundary()">🗑 Clear</button>
-            </div>
+      <!-- SETTINGS -->
+      <div class="apanel" id="ap-settings">
+        <div class="card">
+          <div class="card-title">Site Toggles</div>
+          <div class="tog-row"><div><div class="tog-l">Show Mission Progress Bar</div><div class="tog-s">Progress bars on homepage</div></div><label class="tog"><input type="checkbox" checked><div class="tog-tr"></div></label></div>
+          <div class="tog-row"><div><div class="tog-l">Show Mission Map</div><div class="tog-s">Interactive map with location pin</div></div><label class="tog"><input type="checkbox" checked><div class="tog-tr"></div></label></div>
+          <div class="tog-row"><div><div class="tog-l">Allow Contact Form Messages</div><div class="tog-s">Let visitors send messages</div></div><label class="tog"><input type="checkbox" checked><div class="tog-tr"></div></label></div>
+          <div class="tog-row"><div><div class="tog-l">Email Subscriptions</div><div class="tog-s">Allow email subscriptions</div></div><label class="tog"><input type="checkbox" checked><div class="tog-tr"></div></label></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Change Admin Password</div>
+          <div class="fg"><label>Current Password</label><input type="password" id="cur-pw"></div>
+          <div class="fr">
+            <div class="fg"><label>New Password</label><input type="password" id="new-pw"></div>
+            <div class="fg"><label>Confirm</label><input type="password" id="conf-pw"></div>
           </div>
-
-          <div class="card">
-            <div class="card-title">Areas Served</div>
-            <div class="card-desc">Draw an area boundary on the map, then assign it to an area below.</div>
-            <div class="area-list" id="area-list"></div>
-            <button class="btn bn bfull" style="margin-top:10px;" onclick="addArea()">+ Add New Area</button>
-          </div>
-
-          <div class="card">
-            <div class="card-title">Other Mission Cities</div>
-            <div class="card-desc">Add or remove cities shown on the map.</div>
-            <div id="city-list" style="max-height:180px;overflow-y:auto;margin-bottom:10px;"></div>
-            <div class="fr">
-              <div class="fg"><input id="new-city-name" placeholder="City name"></div>
-              <div class="fg"><input id="new-city-lat" placeholder="Lat (e.g. 43.49)"></div>
-            </div>
-            <div class="fr">
-              <div class="fg"><input id="new-city-lng" placeholder="Lng (e.g. -112.03)"></div>
-              <button class="btn bg" onclick="addCity()">+ Add City</button>
-            </div>
-          </div>
-
-          <button class="btn bg bfull" style="margin-top:4px;" onclick="saveMapData()">💾 Save All Map Data</button>
+          <button class="btn bn" onclick="changePassword()">Update Password</button>
         </div>
       </div>
-    </div>
 
-    <!-- ═══ UPDATES ═══ -->
-    <div class="apanel" id="ap-updates">
-      <div class="card">
-        <div class="card-title">Write New Update ✏️</div>
-        <div class="card-desc">Publish to the top of the Updates page.</div>
-        <div class="fr">
-          <div class="fg"><label>Week Number</label><input type="number" id="nu-week" value="48"></div>
-          <div class="fg"><label>Date</label><input type="date" id="nu-date"></div>
-        </div>
-        <div class="fg"><label>Title</label><input id="nu-title" placeholder="e.g. A Week of Miracles"></div>
-        <div class="fg"><label>Location</label><input id="nu-loc" value="Idaho Falls, ID – West Area"></div>
-        <div class="fg"><label>Your Letter</label><textarea id="nu-body" style="min-height:160px;" placeholder="Dear family and friends,&#10;&#10;This week was…"></textarea></div>
-        <div class="fr">
-          <div class="fg"><label>Scripture Text</label><input id="nu-verse" placeholder="And the Spirit shall be given…"></div>
-          <div class="fg"><label>Scripture Reference</label><input id="nu-ref" placeholder="D&amp;C 42:14"></div>
-        </div>
-        <div class="fg"><label>Tags (comma separated)</label><input id="nu-tags" placeholder="Teaching, Service, Zone Conference"></div>
-        <div style="display:flex;gap:7px;margin-top:4px;">
-          <button class="btn bg" onclick="publishPost()">🚀 Publish Update</button>
-          <button class="btn bn" onclick="saveDraft()">💾 Save Draft</button>
+      <!-- MESSAGES -->
+      <div class="apanel" id="ap-messages">
+        <div class="card">
+          <div class="card-title">Messages from Supporters</div>
+          <div id="message-list"></div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">All Updates</div>
-        <div class="card-desc">Edit or delete any past update. Changes are saved locally until you push to GitHub.</div>
-        <div id="admin-posts"></div>
-      </div>
-    </div>
 
-    <!-- ═══ PHOTOS ═══ -->
-    <div class="apanel" id="ap-photos">
-      <div class="card">
-        <div class="card-title">Upload Photos</div>
-        <div class="card-desc">Add new photos to the gallery. Photos are stored as emoji placeholders in the demo — in production, upload to a CDN or GitHub Assets.</div>
-        <div class="dropzone" onclick="toast('File picker would open here in production 📸')">
-          <div style="font-size:2rem;margin-bottom:7px;">📸</div>
-          <div style="font-weight:700;color:var(--navy);">Drop photos here or click to browse</div>
-          <div style="font-size:.74rem;color:var(--muted);margin-top:3px;">JPG, PNG · Max 10MB · Multiple files OK</div>
+      <!-- SUBSCRIBERS -->
+      <div class="apanel" id="ap-subs">
+        <div class="card">
+          <div class="card-title">Email Subscribers</div>
+          <div class="card-desc" id="subs-count">Loading...</div>
+          <div id="subs-list"></div>
         </div>
-        <div class="fr" style="margin-top:12px;">
-          <div class="fg"><label>Album Name</label><select id="ph-album"><option>March 2025</option><option>Early 2025</option><option>2024</option><option value="new">+ New Album…</option></select></div>
-          <div class="fg"><label>Caption</label><input id="ph-caption" placeholder="e.g. Zone Conference, March 2025"></div>
-        </div>
-        <button class="btn bg" onclick="toast('Photo added! Push to GitHub to publish.')">+ Add Photo</button>
-      </div>
-      <div class="card">
-        <div class="card-title">Manage Photos</div>
-        <div class="card-desc">Hover to edit or delete. Changes are local until pushed to GitHub.</div>
-        <div class="pa-grid" id="photo-admin-grid"></div>
-      </div>
-    </div>
-
-    <!-- ═══ SCRIPTURE ═══ -->
-    <div class="apanel" id="ap-scripture">
-      <div class="card">
-        <div class="card-title">Weekly Scripture</div>
-        <div class="card-desc">Appears on the homepage and Updates page.</div>
-        <div class="fg"><label>Scripture Text</label><textarea id="sc-text" style="min-height:80px;font-family:'Playfair Display',serif;font-style:italic;"></textarea></div>
-        <div class="fg"><label>Full Reference (e.g. Doctrine &amp; Covenants 42:14)</label><input id="sc-ref"></div>
-        <button class="btn bg" onclick="saveScripture()">📖 Update Scripture</button>
-      </div>
-      <div class="card">
-        <div class="card-title">Scripture Archive</div>
-        <div class="card-desc">Past scriptures from your updates.</div>
-        <div id="scripture-archive"></div>
-      </div>
-    </div>
-
-    <!-- ═══ TIMELINE ═══ -->
-    <div class="apanel" id="ap-timeline">
-      <div class="card">
-        <div class="card-title">Mission Timeline</div>
-        <div class="card-desc">Edit the timeline milestones shown on the homepage.</div>
-        <div id="timeline-list"></div>
-        <button class="btn bn" style="margin-top:12px;" onclick="addTimelineItem()">+ Add Milestone</button>
-      </div>
-    </div>
-
-    <!-- ═══ GITHUB ═══ -->
-    <div class="apanel" id="ap-github">
-      <div class="gh-config">
-        <h4>🐙 GitHub Configuration</h4>
-        <div class="fr">
-          <div class="fg"><label>GitHub Username</label><input id="gh-user" placeholder="your-username"></div>
-          <div class="fg"><label>Repository Name</label><input id="gh-repo" placeholder="mission-site"></div>
-        </div>
-        <div class="fg"><label>Branch</label><input id="gh-branch" value="main"></div>
-        <div class="fg"><label>Personal Access Token (PAT)</label><input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"></div>
-        <p style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:6px;">Your PAT is stored only in your browser's localStorage. It never leaves your device except to authenticate with GitHub.</p>
-        <button class="btn bg" style="margin-top:10px;" onclick="saveGHConfig()">💾 Save GitHub Config</button>
       </div>
 
-      <div class="card">
-        <div class="card-title">How to Get a GitHub Personal Access Token</div>
-        <div class="card-desc">Step-by-step instructions:</div>
-        <ol style="font-size:.84rem;line-height:2;color:var(--text);padding-left:18px;">
-          <li>Go to <b>github.com → Settings → Developer Settings → Personal access tokens → Tokens (classic)</b></li>
-          <li>Click <b>"Generate new token (classic)"</b></li>
-          <li>Give it a name like <b>"Mission Site Admin"</b></li>
-          <li>Set expiration to <b>No expiration</b> (or 1 year)</li>
-          <li>Check the <b>"repo"</b> scope (full control of private repos)</li>
-          <li>Click <b>Generate token</b> and copy it</li>
-          <li>Paste it in the field above and click Save</li>
-        </ol>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Publish Changes to GitHub</div>
-        <div class="card-desc">This will commit and push your updated <b>data.json</b> to your GitHub repository. The live site will update automatically.</div>
-        <div class="fg"><label>Commit Message</label><input id="gh-commit-msg" value="Update mission data" placeholder="e.g. Add week 48 update"></div>
-        <button class="push-btn bfull" onclick="pushToGitHub()" style="margin-top:6px;">🐙 Push data.json to GitHub</button>
-        <div id="push-log" style="margin-top:12px;font-size:.78rem;color:var(--muted);font-family:monospace;background:var(--cream);border-radius:6px;padding:10px;min-height:40px;">Push log will appear here…</div>
-      </div>
-    </div>
-
-    <!-- ═══ SETTINGS ═══ -->
-    <div class="apanel" id="ap-settings">
-      <div class="card">
-        <div class="card-title">Site Feature Toggles</div>
-        <div class="tog-row"><div><div class="tog-l">Show Mission Progress Bar</div><div class="tog-s">Display the progress bars on the homepage</div></div><label class="tog"><input type="checkbox" checked id="t-progress"><div class="tog-tr"></div></label></div>
-        <div class="tog-row"><div><div class="tog-l">Show Mission Map</div><div class="tog-s">Show the interactive map with location pin</div></div><label class="tog"><input type="checkbox" checked id="t-map"><div class="tog-tr"></div></label></div>
-        <div class="tog-row"><div><div class="tog-l">Allow Contact Form Messages</div><div class="tog-s">Let visitors send messages via Contact page</div></div><label class="tog"><input type="checkbox" checked id="t-contact"><div class="tog-tr"></div></label></div>
-        <div class="tog-row"><div><div class="tog-l">Email Subscriptions</div><div class="tog-s">Allow visitors to subscribe for weekly updates</div></div><label class="tog"><input type="checkbox" checked id="t-subs"><div class="tog-tr"></div></label></div>
-        <div class="tog-row"><div><div class="tog-l">Photo Gallery Visible</div><div class="tog-s">Show the Photos page to the public</div></div><label class="tog"><input type="checkbox" checked id="t-photos"><div class="tog-tr"></div></label></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Change Admin Password</div>
-        <div class="fg"><label>Current Password</label><input type="password" id="cur-pw" placeholder="••••••••"></div>
-        <div class="fr">
-          <div class="fg"><label>New Password</label><input type="password" id="new-pw" placeholder="••••••••"></div>
-          <div class="fg"><label>Confirm</label><input type="password" id="conf-pw" placeholder="••••••••"></div>
-        </div>
-        <button class="btn bn" onclick="changePassword()">🔐 Update Password</button>
-      </div>
-    </div>
-
-    <!-- ═══ MESSAGES ═══ -->
-    <div class="apanel" id="ap-messages">
-      <div class="card">
-        <div class="card-title">Messages from Supporters</div>
-        <div class="card-desc">Sent through the Contact page.</div>
-        <div id="message-list"></div>
-      </div>
-    </div>
-
-    <!-- ═══ SUBSCRIBERS ═══ -->
-    <div class="apanel" id="ap-subs">
-      <div class="card">
-        <div class="card-title">Email Subscribers</div>
-        <div class="card-desc" id="subs-count">Loading…</div>
-        <div id="subs-list"></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Send Broadcast Email</div>
-        <div class="card-desc">Note: Actual email delivery requires an email service (e.g. Mailchimp, SendGrid). This records the broadcast intent in data.json.</div>
-        <div class="fg"><label>Subject</label><input placeholder="e.g. Special Announcement from Elder Gledhill"></div>
-        <div class="fg"><label>Message</label><textarea placeholder="Write your message here…"></textarea></div>
-        <button class="btn bg" onclick="toast('Broadcast recorded! Connect an email service to deliver.')">📤 Save Broadcast</button>
-      </div>
-    </div>
-
-  </div><!-- /content -->
-</div><!-- /main -->
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /admin-wrap -->
 
 <!-- EDIT POST MODAL -->
 <div class="modal-bg" id="edit-modal">
   <div class="modal">
-    <div class="modal-hd"><h3>Edit Update</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-hd"><h3>Edit Update</h3><button class="modal-close" onclick="closeModal('edit-modal')">&#10005;</button></div>
     <div class="modal-body">
       <div class="fg"><label>Title</label><input id="em-title"></div>
       <div class="fg"><label>Date</label><input id="em-date"></div>
       <div class="fg"><label>Location</label><input id="em-loc"></div>
-      <div class="fg"><label>Letter Body</label><textarea id="em-body" style="min-height:160px;"></textarea></div>
-      <div class="fr">
-        <div class="fg"><label>Scripture</label><input id="em-verse"></div>
-        <div class="fg"><label>Reference</label><input id="em-ref"></div>
-      </div>
+      <div class="fg"><label>Letter Body</label><textarea id="em-body" style="min-height:140px;"></textarea></div>
+      <div class="fr"><div class="fg"><label>Scripture</label><input id="em-verse"></div><div class="fg"><label>Reference</label><input id="em-ref"></div></div>
       <div class="fg"><label>Tags (comma separated)</label><input id="em-tags"></div>
     </div>
     <div class="modal-ft">
-      <button class="btn" style="border:2px solid #e0ddd6;color:var(--muted);" onclick="closeModal()">Cancel</button>
-      <button class="btn bn" onclick="saveEditedPost()">💾 Save Changes</button>
+      <button class="btn" style="border:2px solid #e0ddd6;color:var(--muted);" onclick="closeModal('edit-modal')">Cancel</button>
+      <button class="btn bn" onclick="saveEditedPost()">Save Changes</button>
     </div>
   </div>
 </div>
 
-<!-- ADD AREA MODAL -->
-<div class="modal-bg" id="area-modal">
+<!-- PHOTO CAPTION MODAL -->
+<div class="modal-bg" id="photo-modal">
   <div class="modal">
-    <div class="modal-hd"><h3>Add / Edit Area</h3><button class="modal-close" onclick="closeAreaModal()">✕</button></div>
+    <div class="modal-hd"><h3>Edit Photo Details</h3><button class="modal-close" onclick="closeModal('photo-modal')">&#10005;</button></div>
     <div class="modal-body">
-      <div class="fg"><label>Area Name</label><input id="am-name" placeholder="e.g. Rexburg"></div>
+      <div id="photo-modal-preview" style="width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;margin-bottom:12px;background:#eee;display:flex;align-items:center;justify-content:center;"></div>
+      <div class="fg"><label>Title / Caption</label><input id="pm-title"></div>
+      <div class="fg"><label>Description</label><textarea id="pm-desc" style="min-height:60px;"></textarea></div>
       <div class="fr">
-        <div class="fg"><label>Status</label><select id="am-status"><option value="future">Upcoming</option><option value="completed">Completed</option><option value="current">Current</option></select></div>
-        <div class="fg"><label>Center Latitude</label><input id="am-lat" type="number" step="0.001"></div>
+        <div class="fg"><label>Album</label><input id="pm-album"></div>
+        <div class="fg"><label>Date</label><input id="pm-date" placeholder="e.g. March 2025"></div>
       </div>
-      <div class="fr">
-        <div class="fg"><label>Center Longitude</label><input id="am-lng" type="number" step="0.001"></div>
-        <div class="fg"><label>Start Date</label><input id="am-start" placeholder="e.g. March 2024"></div>
-      </div>
-      <div class="fg"><label>End Date</label><input id="am-end" placeholder="e.g. September 2024 (or leave blank)"></div>
     </div>
     <div class="modal-ft">
-      <button class="btn" style="border:2px solid #e0ddd6;color:var(--muted);" onclick="closeAreaModal()">Cancel</button>
-      <button class="btn bn" onclick="saveArea()">💾 Save Area</button>
+      <button class="btn" style="border:2px solid #e0ddd6;color:var(--muted);" onclick="closeModal('photo-modal')">Cancel</button>
+      <button class="btn bn" onclick="savePhotoEdit()">Save Photo</button>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast">✅ Done!</div>
+<div class="toast" id="toast">Done!</div>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-// GLOBALS
-// ═══════════════════════════════════════════════════════════
-const LOCAL_KEY  = 'mission_admin_data';
-const GH_KEY     = 'mission_gh_config';
-const PW_KEY     = 'mission_admin_pw';
-let D            = null;   // full data object
-let GH           = null;   // github config
-let editingPostId = null;
-let editingAreaIdx = null;
+// =========================================
+// EMBEDDED DATA + GLOBALS
+// =========================================
+var EMBEDDED_DATA = {"missionary":{"firstName":"Michael","lastName":"Gledhill","hometown":"American Fork, Utah","age":21,"missionName":"Idaho Idaho Falls Mission","missionPresident":"President & Sister Harmon","startDate":"2024-01-08","endDate":"2026-01-08","currentCompanion":"Elder Christensen","currentArea":"Idaho Falls West","bio":"Hi! I'm Michael Gledhill \u2014 Elder Gledhill out here. I grew up in American Fork, Utah as the oldest of five kids in a family that loves the gospel, hiking, and way too much football. I've been a member of The Church of Jesus Christ of Latter-day Saints my whole life, but it was during my senior year of high school that I gained my own testimony \u2014 through prayer, scripture study, and watching the gospel transform people around me.","testimony":"I know that God lives and that He knows each of us by name. I know that Jesus Christ is our Savior \u2014 not just a historical figure, but a living, present, active force in our lives when we invite Him in. I know that the Book of Mormon is true scripture, and that reading it with real intent will change you. And I know \u2014 more than I know almost anything \u2014 that this work matters. These 24 months are the best thing I have ever done.","hobbies":["Basketball","Guitar","Hiking","Reading","BYU Football","Writing","Music","Cooking"],"collegePlans":"BYU-Idaho \u2014 Communications"},"stats":{"monthsServed":14,"monthsTotal":24,"weeklyUpdates":47,"areasServed":3,"overallProgress":58,"areaProgress":50,"weeklyGoalDiscussions":8,"weeklyGoalTarget":12,"subscribers":124},"location":{"city":"Idaho Falls","state":"Idaho","lat":43.4917,"lng":-112.0339,"areaDescription":"Idaho Falls West Area"},"scripture":{"text":"And the Spirit shall be given unto you by the prayer of faith.","reference":"Doctrine & Covenants 42:14"},"mapBoundaries":{"missionBoundary":[[44.7,-115.5],[44.9,-114.2],[45.1,-113.5],[45.5,-113.2],[45.7,-112.8],[45.7,-111.5],[45.4,-111.0],[45.2,-110.8],[44.8,-110.7],[44.5,-110.8],[44.2,-111.0],[44.1,-111.3],[43.8,-111.5],[43.5,-111.5],[43.2,-111.6],[43.0,-112.0],[42.5,-112.2],[42.0,-112.5],[41.8,-112.8],[41.9,-113.5],[42.0,-114.0],[42.1,-114.5],[42.5,-115.0],[43.0,-115.5],[43.5,-115.8],[44.0,-115.7],[44.3,-115.6],[44.7,-115.5]],"areas":[{"id":"rexburg","name":"Rexburg","status":"completed","startDate":"March 2024","endDate":"September 2024","lat":43.8235,"lng":-111.7899,"boundary":[]},{"id":"pocatello","name":"Pocatello","status":"completed","startDate":"September 2024","endDate":"January 2025","lat":42.8713,"lng":-112.4455,"boundary":[]},{"id":"idahofalls","name":"Idaho Falls West","status":"current","startDate":"January 2025","endDate":null,"lat":43.4917,"lng":-112.0339,"boundary":[]}],"cities":[{"name":"Twin Falls","lat":42.5629,"lng":-114.4609,"type":"city"},{"name":"Blackfoot","lat":43.1908,"lng":-112.3449,"type":"city"},{"name":"American Falls","lat":42.7877,"lng":-112.8607,"type":"city"},{"name":"Rigby","lat":43.6724,"lng":-111.9135,"type":"city"},{"name":"St Anthony","lat":43.969,"lng":-111.6824,"type":"city"},{"name":"Soda Springs","lat":42.6541,"lng":-111.6046,"type":"city"},{"name":"Montpelier","lat":42.3213,"lng":-111.2988,"type":"city"},{"name":"Preston","lat":42.0963,"lng":-111.8766,"type":"city"},{"name":"Salmon","lat":45.1763,"lng":-113.8958,"type":"city"},{"name":"Ashton","lat":44.0716,"lng":-111.4488,"type":"city"},{"name":"Burley","lat":42.536,"lng":-113.7918,"type":"city"}]},"timeline":[{"id":1,"date":"January 2024","event":"Entered the MTC in Provo, Utah","status":"done"},{"id":2,"date":"March 2024","event":"Arrived in Idaho \u2014 First area: Rexburg","status":"done"},{"id":3,"date":"September 2024","event":"Transferred to Pocatello","status":"done"},{"id":4,"date":"January 2025","event":"Transferred to Idaho Falls West","status":"current"},{"id":5,"date":"July 2025","event":"18-month mark \ud83c\udf89","status":"future"},{"id":6,"date":"January 2026","event":"Return Home \u2014 Mission Complete!","status":"future"}],"posts":[{"id":47,"week":47,"date":"March 24, 2025","title":"A Family That Changed Everything","location":"Idaho Falls, ID \u2013 West Area","body":"Dear family and friends,\n\nThis has been one of the most spiritual weeks of my entire mission. We've been teaching the Sorenson family for almost three months now, and this week something shifted. We were in their living room teaching about the Plan of Salvation, and you could feel the Spirit so strongly. The dad, who had been the most skeptical, started asking questions I've never heard an investigator ask. His heart is opening.\n\nWe also had a fantastic ward mission council meeting where we coordinated three member-present lessons. Members make ALL the difference \u2014 investigators trust them in a way they can't quite trust us yet as missionaries.\n\nThe weather has finally warmed up here. We biked 18 miles this week! My legs are thanking me... kind of. \ud83d\ude04 I love you all and feel your prayers every single day.\n\n\u2013 Elder Gledhill","scripture":"And the Spirit shall be given unto you by the prayer of faith.","scriptureRef":"D&C 42:14","tags":["Teaching","Investigators","Ward Mission"]},{"id":46,"week":46,"date":"March 17, 2025","title":"Transfer Calls \u2014 I'm Staying!","location":"Idaho Falls, ID \u2013 West Area","body":"Dear family,\n\nTransfer calls came in on Saturday night and \u2014 I'm staying in Idaho Falls West! I honestly felt relief more than anything. We have so many promising investigators right now that I would have hated to leave. Elder Christensen is also staying, which means we get another full transfer together. He's one of the best companions I've had.\n\nSt. Patrick's Day was fun \u2014 half the ward showed up to church in green. One of our investigators, Sister Davis, attended sacrament meeting for the first time. She told us afterward she felt a peace she couldn't explain. Moments like that are why I'm here.\n\nThank you for all the letters this week \u2014 they seriously mean the world to me!\n\nLove, Elder Gledhill","scripture":"I can do all things through Christ which strengtheneth me.","scriptureRef":"Philippians 4:13","tags":["Transfers","Investigators","Zone"]},{"id":45,"week":45,"date":"March 10, 2025","title":"A Baptism I'll Never Forget","location":"Idaho Falls, ID \u2013 West Area","body":"Dear family,\n\nWe got to attend the baptism of Marcus Thompson this week \u2014 someone Elder Petersen and I started teaching back in September. I didn't think I'd ever get to see it, and then there I was, standing at the font with tears in my eyes.\n\nMarcus stood up and bore his testimony right after and said he'd been searching for peace his whole life and finally found it. I could barely hold it together. The gospel changes lives \u2014 I know that more firmly every single week.\n\nWe also had our zone conference with President and Sister Harmon. He challenged each of us to pick a Christlike attribute to focus on. I chose patience.\n\nWith love, Elder Gledhill","scripture":"\u2026how great shall be your joy with him in the kingdom of my Father!","scriptureRef":"D&C 18:15","tags":["Baptism","Zone Conference","Spiritual"]},{"id":44,"week":44,"date":"March 3, 2025","title":"Snow, Service, and the Spirit","location":"Idaho Falls, ID \u2013 West Area","body":"Dear family,\n\nIdaho in March \u2014 sometimes it's 50 degrees, sometimes you get 8 inches of snow overnight. This week was the latter. We spent Monday shoveling driveways for elderly members in our ward, and every single house we finished led to a conversation about the gospel. Service really does open doors that knocking never could.\n\nWe had a powerful companionship study this week about the attributes of Christ. Elder Christensen and I have started role-playing lessons in the morning and it's made a huge difference in how confidently I teach.\n\nKeep the letters coming \u2014 they are fuel for the soul.\n\n\u2014 Elder Gledhill","scripture":"By their fruits ye shall know them.","scriptureRef":"Matthew 7:20","tags":["Service","Idaho Winter","Companionship"]}],"photos":[{"id":1,"emoji":"\ud83c\udf04","title":"Snake River at Sunset","desc":"The Snake River right at golden hour after a long day of teaching.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#b8d4f0,#7aaad8)","span":"r2"},{"id":2,"emoji":"\u26ea","title":"Idaho Falls Temple","desc":"Every P-day we walk the temple grounds. There is nothing quite like it.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#f0d4b8,#d8a87a)","span":""},{"id":3,"emoji":"\ud83e\udd1d","title":"Zone Conference","desc":"All the missionaries from our zone after an incredible Zone Conference.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#b8f0cc,#7ad8a0)","span":""},{"id":4,"emoji":"\u2744\ufe0f","title":"Service in the Snow","desc":"Shoveled driveways for 6 hours. Tired but grateful \u2014 service opens hearts.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#f0b8d0,#d87aa8)","span":""},{"id":5,"emoji":"\ud83d\udeb2","title":"18 Miles on Bikes","desc":"My companion Elder Christensen and I after our longest bike day yet!","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#d0b8f0,#a87ad8)","span":""},{"id":6,"emoji":"\ud83c\udf89","title":"Transfer Day","desc":"Moving to Idaho Falls West! New area, new companion, same gospel.","album":"Early 2025","date":"January 2025","bg":"linear-gradient(135deg,#f0f0b8,#d8d47a)","span":""},{"id":7,"emoji":"\ud83d\udca7","title":"Baptism of Marcus Thompson","desc":"The day Marcus was baptized. One of the most spiritual moments of my mission.","album":"Early 2025","date":"March 2025","bg":"linear-gradient(135deg,#f0c8b8,#d8987a)","span":""},{"id":8,"emoji":"\u2708\ufe0f","title":"Arrived in Idaho!","desc":"Day 1 in the mission field. Terrified and excited all at once.","album":"2024","date":"March 2024","bg":"linear-gradient(135deg,#f0b8b8,#d87a7a)","span":""},{"id":9,"emoji":"\ud83c\udf42","title":"Fall in Rexburg","desc":"Fall colors in our first area. I never knew Idaho was this beautiful.","album":"2024","date":"October 2024","bg":"linear-gradient(135deg,#e8f0b8,#c8d87a)","span":"c2 r2"},{"id":10,"emoji":"\ud83c\udf93","title":"MTC Graduation","desc":"Last day at the MTC. We were ready!","album":"2024","date":"March 2024","bg":"linear-gradient(135deg,#b8d4f0,#7aaad8)","span":""}],"messages":[{"id":1,"name":"Grandma Ruth","email":"grandmaruth@gmail.com","relation":"Family member","message":"So proud of you Elder! We pray for you every morning.","date":"March 25, 2025","replied":false},{"id":2,"name":"Tyler H.","email":"tylerh1994@yahoo.com","relation":"Friend from school","message":"Miss you man! Keep crushing it out there. Go Cougars!","date":"March 23, 2025","replied":false},{"id":3,"name":"Sister Johnson","email":"sisterjohnson@gmail.com","relation":"Ward member","message":"Your testimony has strengthened mine. Thank you.","date":"March 21, 2025","replied":true}],"subscribers":[{"email":"grandmaruth@gmail.com","date":"March 2024","relation":"Family"},{"email":"tylerh1994@yahoo.com","date":"January 2025","relation":"Friend"},{"email":"sisterjohnson@gmail.com","date":"February 2025","relation":"Ward"}]};
+var D   = null;
+var GH  = {};
+var editingPostId  = null;
+var editingPhotoId = null;
+var pendingPhotos  = [];  // photos waiting to be added
 
 // Admin map vars
-let adminMap       = null;
-let adminLayer     = null;
-let adminDrawLayer = null;
-let adminPinMarker = null;
-let drawnItems     = null;
-let missionBoundaryLayer = null;
-let areaLayerGroup = null;
+var adminMap        = null;
+var adminTileLayer  = null;
+var drawnItems      = null;
+var adminPinMarker  = null;
+var missionBoundaryLayer = null;
+var areaLayerGroup  = null;
 
-const adminLayers = {
-  road:      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO',maxZoom:18}),
-  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:18}),
-  topo:      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap, © OpenTopoMap',maxZoom:17})
+var adminTileLayers = {
+  road:      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{attribution:"(c) OpenStreetMap, CARTO",maxZoom:18}),
+  satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"(c) Esri",maxZoom:18}),
+  topo:      L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{attribution:"(c) OpenStreetMap, OpenTopoMap",maxZoom:17})
 };
 
-const AREA_COLORS = {current:'#C9A84C',completed:'#2a7a4a',future:'#9ca3af'};
+var AREA_COLORS = {current:"#C9A84C",completed:"#2a7a4a",future:"#9ca3af"};
 
-// ═══════════════════════════════════════════════════════════
-// LOAD / SAVE
-// ═══════════════════════════════════════════════════════════
-async function init() {
-  // Load GH config from localStorage
-  GH = JSON.parse(localStorage.getItem(GH_KEY) || '{}');
-  // Load data — try GitHub first, then local, then localStorage cache
-  let loaded = false;
-  if (GH.user && GH.repo) {
-    try {
-      const url = `https://raw.githubusercontent.com/${GH.user}/${GH.repo}/main/data.json?t=${Date.now()}`;
-      const r = await fetch(url);
-      if (r.ok) { D = await r.json(); loaded = true; log('Loaded from GitHub ✅'); }
-    } catch(e){}
+// Panel titles
+var panelTitles = {dash:"Dashboard",profile:"Profile & About Me",progress:"Mission Progress",map:"Mission Map Editor",updates:"Weekly Updates",photos:"Photo Gallery",scripture:"Scripture",timeline:"Timeline",github:"GitHub / Publish",settings:"Settings",messages:"Messages",subs:"Subscribers"};
+
+// =========================================
+// AUTH
+// =========================================
+function doLogin() {
+  var pw = document.getElementById("pwInput").value;
+  var stored = localStorage.getItem("mission_pw") || "mission2024";
+  if (pw === stored) {
+    document.getElementById("loginScreen").classList.add("gone");
+    document.getElementById("adminWrap").classList.add("on");
+    initAdmin();
+  } else {
+    document.getElementById("loginErr").style.display = "block";
   }
-  if (!loaded) {
-    try {
-      const r = await fetch('data.json?t=' + Date.now());
-      if (r.ok) { D = await r.json(); loaded = true; log('Loaded local data.json ✅'); }
-    } catch(e){}
+}
+function logout() {
+  document.getElementById("adminWrap").classList.remove("on");
+  document.getElementById("loginScreen").classList.remove("gone");
+  document.getElementById("pwInput").value = "";
+  document.getElementById("loginErr").style.display = "none";
+}
+function changePassword() {
+  var cur = g("cur-pw"), np = g("new-pw"), cp = g("conf-pw");
+  var stored = localStorage.getItem("mission_pw") || "mission2024";
+  if (cur !== stored) { toast("Current password incorrect","#c0392b"); return; }
+  if (!np)            { toast("New password cannot be empty","#c0392b"); return; }
+  if (np !== cp)      { toast("Passwords do not match","#c0392b"); return; }
+  localStorage.setItem("mission_pw", np);
+  s("cur-pw",""); s("new-pw",""); s("conf-pw","");
+  toast("Password updated!");
+}
+document.getElementById("pwInput").addEventListener("keydown", function(e){ if(e.key==="Enter") doLogin(); });
+
+// =========================================
+// INIT
+// =========================================
+function initAdmin() {
+  GH = JSON.parse(localStorage.getItem("mission_gh") || "{}");
+  // Start with embedded data
+  D = JSON.parse(JSON.stringify(EMBEDDED_DATA));
+  // Override with cached admin edits if newer
+  try {
+    var cached = localStorage.getItem("mission_admin_data");
+    if (cached) { var p = JSON.parse(cached); if(p && p._ts) D = p; }
+  } catch(e) {}
+  // Try to pull fresh from GitHub
+  if (GH.user && GH.repo && GH.token) {
+    var url = "https://raw.githubusercontent.com/"+GH.user+"/"+GH.repo+"/main/data.json?t="+Date.now();
+    fetch(url, {headers:{"Authorization":"token "+GH.token}})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(fresh){ if(fresh){ D=fresh; populateAll(); } })
+      .catch(function(){});
   }
-  if (!loaded) {
-    const cached = localStorage.getItem(LOCAL_KEY);
-    if (cached) { D = JSON.parse(cached); loaded = true; log('Loaded from localStorage cache ⚠️'); }
-  }
-  if (!loaded) { alert('Could not load data.json. Make sure it exists in the same folder.'); return; }
   populateAll();
+  populateGHConfig();
   updateGHStatus();
 }
 
 function saveLocal() {
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(D));
+  D._ts = Date.now();
+  localStorage.setItem("mission_admin_data", JSON.stringify(D));
 }
 
-// ═══════════════════════════════════════════════════════════
-// POPULATE ALL PANELS
-// ═══════════════════════════════════════════════════════════
+// =========================================
+// POPULATE
+// =========================================
 function populateAll() {
+  populateDash();
   populateProfile();
   populateProgress();
   populateScripture();
   populateTimeline();
-  populatePhotos();
+  populatePhotosPanel();
+  populatePosts();
   populateMessages();
   populateSubs();
-  populatePosts();
-  populateGHConfig();
-  populateDash();
 }
 
 function populateDash() {
-  const s = D.stats;
-  document.getElementById('ds-posts').textContent  = D.posts.length;
-  document.getElementById('ds-prog').textContent   = s.overallProgress + '%';
-  document.getElementById('ds-subs').textContent   = D.subscribers.length;
-  document.getElementById('ds-photos').textContent = D.photos.length;
-  // Messages preview
-  const ml = document.getElementById('dash-messages');
-  ml.innerHTML = D.messages.slice(0,4).map(m => `
-    <div class="prow">
-      <div class="pnum">💌</div>
-      <div class="pi"><div class="pi-t">${m.name} — "${m.message.slice(0,50)}…"</div><div class="pi-m">${m.date} · ${m.relation}</div></div>
-      <div class="pacts"><button class="abtn ae" onclick="sw('messages',document.querySelector('[onclick*=messages]'))">View</button></div>
-    </div>`).join('');
+  if (!D) return;
+  document.getElementById("ds-posts").textContent  = D.posts.length;
+  document.getElementById("ds-prog").textContent   = D.stats.overallProgress + "%";
+  document.getElementById("ds-subs").textContent   = D.subscribers.length;
+  document.getElementById("ds-photos").textContent = D.photos.length;
+  var ml = document.getElementById("dash-msgs");
+  ml.innerHTML = D.messages.slice(0,3).map(function(m){
+    return "<div class='prow'><div class='pnum'>&#128140;</div><div class='pi'><div class='pi-t'>"+m.name+" - \""+m.message.slice(0,50)+"...\"</div><div class='pi-m'>"+m.date+"</div></div></div>";
+  }).join("");
 }
 
 function populateProfile() {
-  const m = D.missionary;
-  set('p-first', m.firstName); set('p-last', m.lastName);
-  set('p-hometown', m.hometown); set('p-age', m.age);
-  set('p-mission', m.missionName); set('p-pres', m.missionPresident);
-  set('p-start', m.startDate); set('p-end', m.endDate);
-  set('p-comp', m.currentCompanion); set('p-area', m.currentArea);
-  set('p-college', m.collegePlans);
-  set('p-hobbies', m.hobbies.join(', '));
-  set('p-bio', m.bio); set('p-testimony', m.testimony);
+  if (!D) return;
+  var m = D.missionary;
+  s("p-first",m.firstName); s("p-last",m.lastName); s("p-hometown",m.hometown); s("p-age",m.age);
+  s("p-mission",m.missionName); s("p-pres",m.missionPresident);
+  s("p-start",m.startDate); s("p-end",m.endDate);
+  s("p-comp",m.currentCompanion); s("p-area",m.currentArea);
+  s("p-college",m.collegePlans||""); s("p-hobbies",(m.hobbies||[]).join(", "));
+  s("p-bio",m.bio); s("p-testimony",m.testimony);
 }
 
 function populateProgress() {
-  const s = D.stats;
-  setRange('r-overall', s.overallProgress, 'rv-overall', v=>v+'%');
-  setRange('r-area', s.areaProgress, 'rv-area', v=>v+'%');
-  document.getElementById('r-goal').value = s.weeklyGoalDiscussions;
-  rvGoal(document.getElementById('r-goal'));
-  set('s-months', s.monthsServed); set('s-total', s.monthsTotal); set('s-areas', s.areasServed);
+  if (!D) return;
+  var st = D.stats;
+  setRv("r-overall", st.overallProgress, "rv-overall", function(v){ return v+"%"; });
+  setRv("r-area", st.areaProgress, "rv-area", function(v){ return v+"%"; });
+  document.getElementById("r-goal").value = st.weeklyGoalDiscussions;
+  rvGoal(document.getElementById("r-goal"));
+  s("s-months",st.monthsServed); s("s-total",st.monthsTotal); s("s-areas",st.areasServed);
 }
 
 function populateScripture() {
-  set('sc-text', D.scripture.text); set('sc-ref', D.scripture.reference);
-  // Archive
-  const arch = document.getElementById('scripture-archive');
-  const refs = D.posts.filter(p=>p.scriptureRef).slice(0,8);
-  arch.innerHTML = refs.map(p=>`<div class="prow"><div class="pnum">📖</div><div class="pi"><div class="pi-t">"${p.scripture}"</div><div class="pi-m">${p.scriptureRef} · ${p.date}</div></div></div>`).join('');
+  if (!D) return;
+  s("sc-text",D.scripture.text); s("sc-ref",D.scripture.reference);
 }
 
 function populateTimeline() {
-  const c = document.getElementById('timeline-list');
-  c.innerHTML = D.timeline.map((t,i) => `
-    <div class="prow" id="tl-${i}">
-      <div class="pnum">${t.status==='done'?'✅':t.status==='current'?'📍':'🔜'}</div>
-      <div class="pi">
-        <div class="pi-t">${t.event}</div>
-        <div class="pi-m">${t.date} · <span style="color:${t.status==='done'?'var(--green)':t.status==='current'?'var(--gold)':'var(--muted)'}">${t.status}</span></div>
-      </div>
-      <div class="pacts">
-        <button class="abtn ae" onclick="editTL(${i})">Edit</button>
-        <button class="abtn ad" onclick="deleteTL(${i})">Del</button>
-      </div>
-    </div>`).join('');
+  if (!D) return;
+  var c = document.getElementById("timeline-list");
+  c.innerHTML = D.timeline.map(function(t,i){
+    return "<div class='prow'><div class='pnum'>"+(t.status==="done"?"&#10003;":t.status==="current"?"&#128205;":"&#8594;")+"</div><div class='pi'><div class='pi-t'>"+t.event+"</div><div class='pi-m'>"+t.date+" &middot; "+t.status+"</div></div><div class='pacts'><button class='abtn ae' onclick='editTL("+i+")'>Edit</button><button class='abtn ad' onclick='deleteTL("+i+")'>Del</button></div></div>";
+  }).join("");
 }
 
-function populatePhotos() {
-  const g = document.getElementById('photo-admin-grid');
-  g.innerHTML = D.photos.map((p,i) => `
-    <div class="pa-item">
-      <div class="pa-inner" style="background:${p.bg};">${p.emoji}</div>
-      <div class="pa-ov">
-        <button onclick="editPhoto(${p.id})">✏️</button>
-        <button onclick="deletePhoto(${p.id})" style="color:var(--red);">🗑️</button>
-      </div>
-    </div>`).join('') +
-    `<div class="pa-add" onclick="toast('File picker in production! 📸')"><span>➕</span><p style="font-size:.66rem;color:var(--muted);font-weight:700;">Add Photo</p></div>`;
+function populatePhotosPanel() {
+  if (!D) return;
+  renderPhotoManageGrid();
 }
 
-function populateMessages() {
-  const c = document.getElementById('message-list');
-  c.innerHTML = D.messages.map((m,i) => `
-    <div class="prow">
-      <div class="pnum">💌</div>
-      <div class="pi">
-        <div class="pi-t">${m.name} (${m.relation})</div>
-        <div class="pi-m">${m.message.slice(0,80)}… · ${m.date}</div>
-      </div>
-      <div class="pacts">
-        <button class="abtn ae" onclick="toast('Reply via email: ${m.email}')">Reply</button>
-        <button class="abtn ad" onclick="deleteMessage(${i})">Del</button>
-      </div>
-    </div>`).join('');
-}
-
-function populateSubs() {
-  document.getElementById('subs-count').textContent = D.subscribers.length + ' people subscribed to weekly updates.';
-  document.getElementById('subs-list').innerHTML = D.subscribers.map((s,i) => `
-    <div class="prow">
-      <div class="pnum">📧</div>
-      <div class="pi"><div class="pi-t">${s.email}</div><div class="pi-m">Subscribed ${s.date} · ${s.relation}</div></div>
-      <div class="pacts"><button class="abtn ad" onclick="deleteSub(${i})">Unsub</button></div>
-    </div>`).join('');
+function renderPhotoManageGrid() {
+  var grid = document.getElementById("photo-manage-grid");
+  grid.innerHTML = D.photos.map(function(p,i){
+    var hasImg = !!p.imageData;
+    var inner = hasImg
+      ? "<img src='"+p.imageData+"' style='width:100%;height:100%;object-fit:cover;display:block;'>"
+      : "<div class='photo-preview-emoji' style='background:"+(p.bg||"#b8d4f0")+"'>"+( p.emoji||"")+"</div>";
+    return "<div class='photo-preview-item'>" + inner +
+      "<div class='photo-preview-overlay'>" +
+      "<button onclick='openPhotoEdit("+i+")'>&#9999;</button>" +
+      "<button style='color:var(--red);' onclick='deletePhoto("+i+")'>&#128465;</button>" +
+      "</div></div>";
+  }).join("") +
+  "<div class='photo-add-btn'><span style='font-size:1.4rem;'>&#43;</span><p style='font-size:.62rem;color:var(--muted);font-weight:700;'>Add</p><input type='file' accept='image/*' multiple onchange='handlePhotoFiles(this.files)'></div>";
 }
 
 function populatePosts() {
-  const c = document.getElementById('admin-posts');
-  c.innerHTML = D.posts.map(p => `
-    <div class="prow" id="pr-${p.id}">
-      <div class="pnum">${p.week}</div>
-      <div class="pi"><div class="pi-t">${p.title}</div><div class="pi-m">${p.date} · Published</div></div>
-      <div class="pacts">
-        <button class="abtn ae" onclick="openEditPost(${p.id})">Edit</button>
-        <button class="abtn ad" onclick="deletePost(${p.id})">Delete</button>
-      </div>
-    </div>`).join('');
-  // Set next week number
-  document.getElementById('nu-week').value = (D.posts[0]?.week || 47) + 1;
-  document.getElementById('nu-date').value = new Date().toISOString().split('T')[0];
+  if (!D) return;
+  var c = document.getElementById("admin-posts");
+  c.innerHTML = D.posts.map(function(p){
+    return "<div class='prow' id='pr-"+p.id+"'><div class='pnum'>"+p.week+"</div><div class='pi'><div class='pi-t'>"+p.title+"</div><div class='pi-m'>"+p.date+"</div></div><div class='pacts'><button class='abtn ae' onclick='openEditPost("+p.id+")'>Edit</button><button class='abtn ad' onclick='deletePost("+p.id+")'>Delete</button></div></div>";
+  }).join("");
+  var nw = document.getElementById("nu-week");
+  if (nw && D.posts.length) nw.value = (D.posts[0].week||47)+1;
+  var nd = document.getElementById("nu-date");
+  if (nd) nd.value = new Date().toISOString().split("T")[0];
+}
+
+function populateMessages() {
+  if (!D) return;
+  var c = document.getElementById("message-list");
+  c.innerHTML = D.messages.map(function(m,i){
+    return "<div class='prow'><div class='pnum'>&#128140;</div><div class='pi'><div class='pi-t'>"+m.name+" ("+m.relation+")</div><div class='pi-m'>"+m.message.slice(0,80)+"... &middot; "+m.date+"</div></div><div class='pacts'><button class='abtn ad' onclick='deleteMessage("+i+")'>Del</button></div></div>";
+  }).join("");
+}
+
+function populateSubs() {
+  if (!D) return;
+  document.getElementById("subs-count").textContent = D.subscribers.length + " people subscribed.";
+  document.getElementById("subs-list").innerHTML = D.subscribers.map(function(s2,i){
+    return "<div class='prow'><div class='pnum'>&#128231;</div><div class='pi'><div class='pi-t'>"+s2.email+"</div><div class='pi-m'>"+s2.date+" &middot; "+s2.relation+"</div></div><div class='pacts'><button class='abtn ad' onclick='deleteSub("+i+")'>Unsub</button></div></div>";
+  }).join("");
 }
 
 function populateGHConfig() {
-  if (GH.user)   set('gh-user', GH.user);
-  if (GH.repo)   set('gh-repo', GH.repo);
-  if (GH.branch) set('gh-branch', GH.branch);
-  if (GH.token)  document.getElementById('gh-token').value = GH.token;
-  set('gh-commit-msg', 'Update mission data — ' + new Date().toLocaleDateString());
+  if (GH.user)   s("gh-user",GH.user);
+  if (GH.repo)   s("gh-repo",GH.repo);
+  if (GH.branch) s("gh-branch",GH.branch);
+  if (GH.token)  document.getElementById("gh-token").value = GH.token;
+  s("gh-commit-msg", "Update mission data - " + new Date().toLocaleDateString());
+  updateGHStatus();
 }
 
 function populateAreaList() {
-  const c = document.getElementById('area-list');
-  c.innerHTML = D.mapBoundaries.areas.map((a,i) => `
-    <div class="area-row ${a.status==='current'?'cur':''}" onclick="selectArea(${i})">
-      <div class="area-dot" style="background:${AREA_COLORS[a.status]}"></div>
-      <div class="area-rname">${a.name}</div>
-      <span class="area-stat ${a.status==='done'?'as-done':a.status==='current'?'as-cur':'as-fut'}">${a.status}</span>
-      <button class="abtn ae" onclick="editArea(${i},event)">Edit</button>
-    </div>`).join('');
-  // City list
-  const cl = document.getElementById('city-list');
-  cl.innerHTML = D.mapBoundaries.cities.map((c,i) => `
-    <div class="prow">
-      <div class="pi"><div class="pi-t">${c.name}</div><div class="pi-m">${c.lat}, ${c.lng}</div></div>
-      <div class="pacts"><button class="abtn ad" onclick="deleteCity(${i})">Remove</button></div>
-    </div>`).join('');
+  var c = document.getElementById("area-list");
+  c.innerHTML = D.mapBoundaries.areas.map(function(a,i){
+    var color = AREA_COLORS[a.status]||"#999";
+    var statCls = a.status==="completed"?"as-done":a.status==="current"?"as-cur":"as-fut";
+    return "<div class='area-row "+(a.status==="current"?"cur":"")+"'>" +
+      "<div class='area-dot' style='background:"+color+"'></div>" +
+      "<div class='area-rname'>"+a.name+"</div>" +
+      "<span class='area-stat "+statCls+"'>"+a.status+"</span>" +
+      "<button class='abtn ae' onclick='editArea("+i+",event)'>Edit</button>" +
+      "</div>";
+  }).join("");
 }
 
-// ═══════════════════════════════════════════════════════════
+// =========================================
+// PHOTO UPLOAD - Real file handling
+// =========================================
+function handlePhotoFiles(files) {
+  if (!files || !files.length) return;
+  pendingPhotos = [];
+  var grid = document.getElementById("upload-preview-grid");
+  if (grid) grid.innerHTML = "";
+  var toProcess = Math.min(files.length, 10); // limit 10 at a time
+  var processed = 0;
+
+  Array.from(files).slice(0, toProcess).forEach(function(file) {
+    if (!file.type.startsWith("image/")) return;
+    // Warn if large
+    if (file.size > 3 * 1024 * 1024) {
+      toast("Warning: " + file.name + " is large ("+Math.round(file.size/1024/1024)+"MB). Images over 3MB may slow GitHub.", "#c0392b");
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var dataUrl = e.target.result;
+      // Compress/resize using canvas
+      var img = new Image();
+      img.onload = function() {
+        var maxW = 1200, maxH = 1200;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        var compressed = canvas.toDataURL("image/jpeg", 0.75);
+
+        var photoObj = {
+          id: Date.now() + Math.random(),
+          imageData: compressed,
+          title: file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g," "),
+          desc: "",
+          album: "",
+          date: new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"}),
+          bg: "#b8d4f0",
+          emoji: "",
+          span: ""
+        };
+        pendingPhotos.push(photoObj);
+
+        // Show preview
+        var prev = document.getElementById("upload-preview-grid");
+        if (prev) {
+          var div = document.createElement("div");
+          div.className = "photo-preview-item";
+          div.innerHTML = "<img src='"+compressed+"' style='width:100%;height:100%;object-fit:cover;display:block;'>";
+          prev.appendChild(div);
+        }
+
+        processed++;
+        if (processed === Math.min(toProcess, files.length)) {
+          var area = document.getElementById("upload-preview");
+          if (area) area.style.display = "block";
+        }
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function confirmUploadPhotos() {
+  if (!pendingPhotos.length) { toast("No photos to add","#c0392b"); return; }
+  var albumSel = g("ph-album");
+  var albumName = albumSel === "__new__" ? g("ph-new-album").trim() : albumSel;
+  if (!albumName) albumName = "Latest";
+  pendingPhotos.forEach(function(ph){
+    ph.album = albumName;
+    ph.id = D.photos.length ? Math.max.apply(null, D.photos.map(function(p){ return p.id||0; })) + 1 : 1;
+    D.photos.unshift(ph);
+  });
+  D.photos = D.photos.slice(0, 50); // keep max 50 photos to avoid huge data.json
+  pendingPhotos = [];
+  document.getElementById("upload-preview").style.display = "none";
+  document.getElementById("upload-preview-grid").innerHTML = "";
+  saveLocal();
+  populatePhotosPanel();
+  populateDash();
+  toast(pendingPhotos.length === 0 ? "Photos added! Push to GitHub to publish." : "Photos added!");
+}
+
+function openPhotoEdit(idx) {
+  var p = D.photos[idx];
+  if (!p) return;
+  editingPhotoId = idx;
+  s("pm-title", p.title||""); s("pm-desc", p.desc||""); s("pm-album", p.album||""); s("pm-date", p.date||"");
+  var prev = document.getElementById("photo-modal-preview");
+  if (p.imageData) {
+    prev.innerHTML = "<img src='"+p.imageData+"' style='width:100%;height:100%;object-fit:cover;'>";
+  } else {
+    prev.style.background = p.bg||"#b8d4f0";
+    prev.innerHTML = "<div style='font-size:3rem;'>"+( p.emoji||"")+"</div>";
+  }
+  document.getElementById("photo-modal").classList.add("on");
+}
+
+function savePhotoEdit() {
+  if (editingPhotoId === null) return;
+  var p = D.photos[editingPhotoId];
+  if (!p) return;
+  p.title = g("pm-title"); p.desc = g("pm-desc"); p.album = g("pm-album"); p.date = g("pm-date");
+  closeModal("photo-modal");
+  saveLocal(); renderPhotoManageGrid(); toast("Photo updated!");
+}
+
+function deletePhoto(idx) {
+  if (!confirm("Delete this photo?")) return;
+  D.photos.splice(idx, 1);
+  saveLocal(); renderPhotoManageGrid(); populateDash(); toast("Photo deleted","#c0392b");
+}
+
+// =========================================
 // SAVE HANDLERS
-// ═══════════════════════════════════════════════════════════
+// =========================================
 function saveProfile() {
-  const m = D.missionary;
-  m.firstName = get('p-first'); m.lastName = get('p-last');
-  m.hometown  = get('p-hometown'); m.age = parseInt(get('p-age'));
-  m.missionName = get('p-mission'); m.missionPresident = get('p-pres');
-  m.startDate = get('p-start'); m.endDate = get('p-end');
-  m.currentCompanion = get('p-comp'); m.currentArea = get('p-area');
-  m.collegePlans = get('p-college');
-  m.hobbies = get('p-hobbies').split(',').map(h=>h.trim()).filter(Boolean);
-  m.bio = get('p-bio'); m.testimony = get('p-testimony');
-  saveLocal(); toast('Profile saved! 👤 Push to GitHub to publish.');
+  var m = D.missionary;
+  m.firstName = g("p-first"); m.lastName = g("p-last"); m.hometown = g("p-hometown"); m.age = parseInt(g("p-age"));
+  m.missionName = g("p-mission"); m.missionPresident = g("p-pres");
+  m.startDate = g("p-start"); m.endDate = g("p-end");
+  m.currentCompanion = g("p-comp"); m.currentArea = g("p-area");
+  m.collegePlans = g("p-college");
+  m.hobbies = g("p-hobbies").split(",").map(function(h){ return h.trim(); }).filter(Boolean);
+  m.bio = g("p-bio"); m.testimony = g("p-testimony");
+  saveLocal(); toast("Profile saved! Push to GitHub to publish.");
 }
 
 function saveProgress() {
-  const s = D.stats;
-  s.overallProgress = parseInt(document.getElementById('r-overall').value);
-  s.areaProgress    = parseInt(document.getElementById('r-area').value);
-  s.weeklyGoalDiscussions = parseInt(document.getElementById('r-goal').value);
-  saveLocal(); toast('Progress updated! 📈');
+  var st = D.stats;
+  st.overallProgress = parseInt(document.getElementById("r-overall").value);
+  st.areaProgress    = parseInt(document.getElementById("r-area").value);
+  st.weeklyGoalDiscussions = parseInt(document.getElementById("r-goal").value);
+  document.getElementById("ds-prog").textContent = st.overallProgress + "%";
+  saveLocal(); toast("Progress updated!");
 }
 
 function saveStats() {
-  const s = D.stats;
-  s.monthsServed = parseInt(get('s-months'));
-  s.monthsTotal  = parseInt(get('s-total'));
-  s.areasServed  = parseInt(get('s-areas'));
-  document.getElementById('ds-prog').textContent = s.overallProgress + '%';
-  saveLocal(); toast('Stats saved!');
+  var st = D.stats;
+  st.monthsServed = parseInt(g("s-months")); st.monthsTotal = parseInt(g("s-total")); st.areasServed = parseInt(g("s-areas"));
+  saveLocal(); toast("Stats saved!");
 }
 
 function saveScripture() {
-  D.scripture.text      = get('sc-text');
-  D.scripture.reference = get('sc-ref');
-  saveLocal(); toast('Scripture updated! 📖 Push to GitHub to publish.');
+  D.scripture.text = g("sc-text"); D.scripture.reference = g("sc-ref");
+  saveLocal(); toast("Scripture updated! Push to GitHub to publish.");
 }
 
 function saveMapData() {
-  const s = D.location;
-  s.city            = get('loc-city');
-  s.state           = get('loc-state');
-  s.areaDescription = get('loc-desc');
-  s.lat             = parseFloat(get('loc-lat')) || s.lat;
-  s.lng             = parseFloat(get('loc-lng')) || s.lng;
-  saveLocal(); toast('Map data saved! 🗺️ Push to GitHub to publish.');
+  D.location.city            = g("loc-city");
+  D.location.state           = g("loc-state");
+  D.location.areaDescription = g("loc-desc");
+  var lat = parseFloat(g("loc-lat")), lng = parseFloat(g("loc-lng"));
+  if (!isNaN(lat)) D.location.lat = lat;
+  if (!isNaN(lng)) D.location.lng = lng;
+  saveLocal(); toast("Map data saved! Push to GitHub to publish.");
 }
 
 function saveGHConfig() {
-  GH = { user:get('gh-user'), repo:get('gh-repo'), branch:get('gh-branch')||'main', token:document.getElementById('gh-token').value.trim() };
-  localStorage.setItem(GH_KEY, JSON.stringify(GH));
-  updateGHStatus(); toast('GitHub config saved! 🐙');
+  GH = { user:g("gh-user"), repo:g("gh-repo"), branch:g("gh-branch")||"main", token:document.getElementById("gh-token").value.trim() };
+  localStorage.setItem("mission_gh", JSON.stringify(GH));
+  updateGHStatus(); toast("GitHub config saved!");
 }
 
-function saveArea() {
-  const area = {
-    id: get('am-name').toLowerCase().replace(/\s+/g,'-'),
-    name: get('am-name'), status: get('am-status'),
-    lat: parseFloat(get('am-lat')), lng: parseFloat(get('am-lng')),
-    startDate: get('am-start'), endDate: get('am-end') || null,
-    boundary: []
-  };
-  if (editingAreaIdx !== null) {
-    D.mapBoundaries.areas[editingAreaIdx] = {...D.mapBoundaries.areas[editingAreaIdx], ...area};
-  } else {
-    D.mapBoundaries.areas.push(area);
-  }
-  closeAreaModal(); populateAreaList(); refreshAdminMapAreas();
-  saveLocal(); toast('Area saved!');
-}
-
-// ═══════════════════════════════════════════════════════════
+// =========================================
 // POSTS
-// ═══════════════════════════════════════════════════════════
+// =========================================
 function publishPost() {
-  const week  = parseInt(get('nu-week'));
-  const title = get('nu-title').trim();
-  const body  = get('nu-body').trim();
-  if (!title || !body) { toast('Title and letter body are required', '#c0392b'); return; }
-  const post = {
-    id: Date.now(), week, date: formatDate(get('nu-date')),
-    title, location: get('nu-loc'),
-    body, scripture: get('nu-verse'),
-    scriptureRef: get('nu-ref'),
-    tags: get('nu-tags').split(',').map(t=>t.trim()).filter(Boolean)
+  var week  = parseInt(g("nu-week"));
+  var title = g("nu-title").trim();
+  var body  = g("nu-body").trim();
+  if (!title || !body) { toast("Title and letter body are required","#c0392b"); return; }
+  var post = {
+    id: Date.now(), week: week,
+    date: formatDate(g("nu-date")),
+    title: title, location: g("nu-loc"),
+    body: body, scripture: g("nu-verse"),
+    scriptureRef: g("nu-ref"),
+    tags: g("nu-tags").split(",").map(function(t){ return t.trim(); }).filter(Boolean)
   };
   D.posts.unshift(post);
   D.stats.weeklyUpdates = D.posts.length;
   saveLocal(); populatePosts(); populateDash();
-  ['nu-title','nu-body','nu-verse','nu-ref','nu-tags'].forEach(id=>set(id,''));
-  toast(`Week ${week} published! 🚀 Push to GitHub to go live.`);
-}
-
-function saveDraft() {
-  saveLocal(); toast('Draft saved locally 💾');
+  s("nu-title",""); s("nu-body",""); s("nu-verse",""); s("nu-ref",""); s("nu-tags","");
+  toast("Week " + week + " published! Push to GitHub to go live.");
 }
 
 function openEditPost(id) {
   editingPostId = id;
-  const p = D.posts.find(x=>x.id===id);
+  var p = D.posts.filter(function(x){ return x.id===id; })[0];
   if (!p) return;
-  set('em-title', p.title); set('em-date', p.date); set('em-loc', p.location);
-  set('em-body', p.body); set('em-verse', p.scripture); set('em-ref', p.scriptureRef);
-  set('em-tags', (p.tags||[]).join(', '));
-  document.getElementById('edit-modal').classList.add('on');
+  s("em-title",p.title); s("em-date",p.date); s("em-loc",p.location);
+  s("em-body",p.body); s("em-verse",p.scripture||""); s("em-ref",p.scriptureRef||"");
+  s("em-tags",(p.tags||[]).join(", "));
+  document.getElementById("edit-modal").classList.add("on");
 }
 
 function saveEditedPost() {
-  const p = D.posts.find(x=>x.id===editingPostId);
+  var p = D.posts.filter(function(x){ return x.id===editingPostId; })[0];
   if (!p) return;
-  p.title = get('em-title'); p.date = get('em-date'); p.location = get('em-loc');
-  p.body = get('em-body'); p.scripture = get('em-verse'); p.scriptureRef = get('em-ref');
-  p.tags = get('em-tags').split(',').map(t=>t.trim()).filter(Boolean);
-  closeModal(); saveLocal(); populatePosts();
-  toast('Update saved! Push to GitHub to publish.');
+  p.title=g("em-title"); p.date=g("em-date"); p.location=g("em-loc");
+  p.body=g("em-body"); p.scripture=g("em-verse"); p.scriptureRef=g("em-ref");
+  p.tags=g("em-tags").split(",").map(function(t){ return t.trim(); }).filter(Boolean);
+  closeModal("edit-modal"); saveLocal(); populatePosts(); toast("Update saved! Push to GitHub to publish.");
 }
 
 function deletePost(id) {
-  if (!confirm('Delete this update permanently?')) return;
-  D.posts = D.posts.filter(p=>p.id!==id);
-  saveLocal(); populatePosts(); populateDash();
-  toast('Update deleted', '#c0392b');
+  if (!confirm("Delete this update?")) return;
+  D.posts = D.posts.filter(function(p){ return p.id!==id; });
+  saveLocal(); populatePosts(); populateDash(); toast("Deleted","#c0392b");
 }
 
-// ═══════════════════════════════════════════════════════════
+// =========================================
 // TIMELINE
-// ═══════════════════════════════════════════════════════════
-function addTimelineItem() {
-  const date  = prompt('Date (e.g. July 2025):'); if (!date) return;
-  const event = prompt('Event description:'); if (!event) return;
-  const status = prompt('Status (done / current / future):') || 'future';
-  D.timeline.push({id:Date.now(),date,event,status});
-  populateTimeline(); saveLocal();
+// =========================================
+function addTL() {
+  var dt = prompt("Date (e.g. July 2025):"); if (!dt) return;
+  var ev = prompt("Event:"); if (!ev) return;
+  var st = prompt("Status (done / current / future):") || "future";
+  D.timeline.push({id:Date.now(),date:dt,event:ev,status:st});
+  saveLocal(); populateTimeline();
 }
 function editTL(i) {
-  const t = D.timeline[i];
-  const nd = prompt('Date:', t.date); if (nd===null) return;
-  const ne = prompt('Event:', t.event); if (ne===null) return;
-  const ns = prompt('Status (done/current/future):', t.status) || t.status;
-  D.timeline[i] = {...t,date:nd,event:ne,status:ns};
-  populateTimeline(); saveLocal(); toast('Timeline updated!');
+  var t = D.timeline[i];
+  var nd = prompt("Date:",t.date); if (nd===null) return;
+  var ne = prompt("Event:",t.event); if (ne===null) return;
+  var ns = prompt("Status (done/current/future):",t.status)||t.status;
+  D.timeline[i] = {id:t.id,date:nd,event:ne,status:ns};
+  saveLocal(); populateTimeline(); toast("Timeline updated!");
 }
 function deleteTL(i) {
-  if (!confirm('Delete this milestone?')) return;
-  D.timeline.splice(i,1); populateTimeline(); saveLocal();
+  if (!confirm("Delete this milestone?")) return;
+  D.timeline.splice(i,1); saveLocal(); populateTimeline();
 }
 
-// ═══════════════════════════════════════════════════════════
-// PHOTOS
-// ═══════════════════════════════════════════════════════════
-function deletePhoto(id) {
-  if (!confirm('Delete this photo?')) return;
-  D.photos = D.photos.filter(p=>p.id!==id);
-  populatePhotos(); saveLocal(); toast('Photo removed', '#c0392b');
-}
-function editPhoto(id) {
-  const p = D.photos.find(x=>x.id===id); if (!p) return;
-  const nt = prompt('Caption:', p.title); if (nt===null) return;
-  const nd = prompt('Description:', p.desc); if (nd===null) return;
-  p.title = nt; p.desc = nd;
-  populatePhotos(); saveLocal(); toast('Photo updated!');
-}
-
-// ═══════════════════════════════════════════════════════════
+// =========================================
 // MESSAGES & SUBS
-// ═══════════════════════════════════════════════════════════
+// =========================================
 function deleteMessage(i) {
-  if (!confirm('Delete this message?')) return;
-  D.messages.splice(i,1); populateMessages(); saveLocal();
+  if (!confirm("Delete message?")) return;
+  D.messages.splice(i,1); saveLocal(); populateMessages();
 }
 function deleteSub(i) {
-  if (!confirm('Unsubscribe this person?')) return;
-  D.subscribers.splice(i,1); populateSubs(); saveLocal();
-  document.getElementById('ds-subs').textContent = D.subscribers.length;
-}
-function deleteCity(i) {
-  D.mapBoundaries.cities.splice(i,1); populateAreaList(); saveLocal();
-}
-function addCity() {
-  const name = get('new-city-name').trim();
-  const lat  = parseFloat(get('new-city-lat'));
-  const lng  = parseFloat(get('new-city-lng'));
-  if (!name || isNaN(lat) || isNaN(lng)) { toast('Please enter name, lat, and lng', '#c0392b'); return; }
-  D.mapBoundaries.cities.push({name,lat,lng,type:'city'});
-  set('new-city-name',''); set('new-city-lat',''); set('new-city-lng','');
-  populateAreaList(); addCityMarker({name,lat,lng}); saveLocal(); toast(`${name} added to map!`);
+  if (!confirm("Unsubscribe?")) return;
+  D.subscribers.splice(i,1); saveLocal(); populateSubs();
+  document.getElementById("ds-subs").textContent = D.subscribers.length;
 }
 
-// ═══════════════════════════════════════════════════════════
+// =========================================
 // ADMIN MAP
-// ═══════════════════════════════════════════════════════════
+// =========================================
 function initAdminMap() {
   if (adminMap) return;
-  const el = document.getElementById('admin-map');
-  if (!el) return;
+  var el = document.getElementById("admin-map");
+  if (!el || !D) return;
 
-  adminMap = L.map('admin-map',{zoomControl:true,scrollWheelZoom:true,attributionControl:false});
-  adminLayer = adminLayers.road.addTo(adminMap);
+  adminMap = L.map("admin-map",{zoomControl:true,scrollWheelZoom:true,attributionControl:false});
+  adminTileLayer = adminTileLayers.road.addTo(adminMap);
+  drawnItems     = new L.FeatureGroup().addTo(adminMap);
+  areaLayerGroup = new L.FeatureGroup().addTo(adminMap);
 
-  // Drawn items layer
-  drawnItems       = new L.FeatureGroup().addTo(adminMap);
-  areaLayerGroup   = new L.FeatureGroup().addTo(adminMap);
-
-  // Draw control
-  const drawControl = new L.Control.Draw({
-    edit: { featureGroup: drawnItems, edit:true, remove:true },
-    draw: {
-      polygon:   { shapeOptions:{color:'#1A2744',fillColor:'rgba(201,168,76,0.15)',fillOpacity:1}, showArea:false },
-      polyline:  false, rectangle: false, circle: false,
-      marker:    { icon: makeAdminCurrentIcon() },
-      circlemarker: false
+  var drawControl = new L.Control.Draw({
+    edit:  { featureGroup: drawnItems },
+    draw:  {
+      polygon:   { shapeOptions:{color:"#1A2744",fillColor:"rgba(201,168,76,0.15)",fillOpacity:1} },
+      polyline:  false, rectangle:false, circle:false, marker:false, circlemarker:false
     }
   });
   adminMap.addControl(drawControl);
 
-  // Draw events
   adminMap.on(L.Draw.Event.CREATED, function(e) {
-    const layer = e.layer;
-    drawnItems.addLayer(layer);
-    if (e.layerType === 'polygon') {
-      const coords = layer.getLatLngs()[0].map(ll=>[ll.lat,ll.lng]);
-      const use = confirm('Use this as the MISSION BOUNDARY?\n\nClick Cancel to assign as an AREA boundary instead.');
-      if (use) {
+    drawnItems.addLayer(e.layer);
+    if (e.layerType === "polygon") {
+      var coords = e.layer.getLatLngs()[0].map(function(ll){ return [ll.lat,ll.lng]; });
+      var useMission = confirm("Use this as the MISSION BOUNDARY?\n\nClick Cancel to assign as an individual AREA boundary.");
+      if (useMission) {
         D.mapBoundaries.missionBoundary = coords;
-        document.getElementById('boundary-json').value = JSON.stringify(coords);
-        toast('Mission boundary set! Save Map Data to keep.');
+        s("boundary-json", JSON.stringify(coords));
+        refreshAdminMapBoundary();
+        toast("Mission boundary set! Save Map Data to keep.");
       } else {
-        const aname = prompt('Which area is this boundary for? (area name)');
+        var aname = prompt("Which area name is this boundary for?");
         if (aname) {
-          const idx = D.mapBoundaries.areas.findIndex(a=>a.name.toLowerCase()===aname.toLowerCase());
-          if (idx>=0) { D.mapBoundaries.areas[idx].boundary = coords; toast(`Boundary set for ${aname}!`); }
-          else { toast('Area not found. Add the area first.', '#c0392b'); }
+          var idx = -1;
+          D.mapBoundaries.areas.forEach(function(a,i){ if(a.name.toLowerCase()===aname.toLowerCase()) idx=i; });
+          if (idx >= 0) { D.mapBoundaries.areas[idx].boundary = coords; toast("Boundary set for "+aname+"!"); }
+          else toast("Area '"+aname+"' not found. Add the area first.","#c0392b");
         }
       }
     }
   });
 
   // Click to move current pin
-  adminMap.on('click', function(e) {
+  adminMap.on("click", function(e) {
     D.location.lat = Math.round(e.latlng.lat*10000)/10000;
     D.location.lng = Math.round(e.latlng.lng*10000)/10000;
-    set('loc-lat', D.location.lat); set('loc-lng', D.location.lng);
+    s("loc-lat", D.location.lat); s("loc-lng", D.location.lng);
     if (adminPinMarker) adminMap.removeLayer(adminPinMarker);
-    adminPinMarker = L.marker([D.location.lat,D.location.lng],{icon:makeAdminCurrentIcon()})
-      .addTo(adminMap)
-      .bindPopup(`<b>📍 ${D.location.city}</b>`).openPopup();
-    toast('Pin moved! Save Map Data to keep.');
+    adminPinMarker = L.marker([D.location.lat,D.location.lng],{icon:makeAdminCurrentIcon(),draggable:true}).addTo(adminMap).bindPopup("<b>"+D.location.city+"</b>").openPopup();
+    adminPinMarker.on("dragend", function(ev) {
+      var p = ev.target.getLatLng();
+      D.location.lat = Math.round(p.lat*10000)/10000;
+      D.location.lng = Math.round(p.lng*10000)/10000;
+      s("loc-lat",D.location.lat); s("loc-lng",D.location.lng);
+    });
+    toast("Pin moved! Save Map Data to keep.");
   });
 
-  // Load existing data onto map
   loadAdminMapData();
-  adminMap.setView([D.location.lat, D.location.lng], 7);
+  adminMap.setView([D.location.lat,D.location.lng],7);
+  s("loc-city",D.location.city); s("loc-state",D.location.state);
+  s("loc-desc",D.location.areaDescription); s("loc-lat",D.location.lat); s("loc-lng",D.location.lng);
   populateAreaList();
-
-  // Populate location fields
-  set('loc-city', D.location.city); set('loc-state', D.location.state);
-  set('loc-desc', D.location.areaDescription);
-  set('loc-lat',  D.location.lat); set('loc-lng', D.location.lng);
 }
 
 function loadAdminMapData() {
-  const mb = D.mapBoundaries;
-  // Mission boundary
-  if (mb.missionBoundary && mb.missionBoundary.length > 2) {
-    missionBoundaryLayer = L.polygon(mb.missionBoundary,{color:'#1A2744',weight:2.5,fillColor:'rgba(201,168,76,0.1)',fillOpacity:1,dashArray:'5,4'}).addTo(adminMap);
-  }
-  // Areas
+  refreshAdminMapBoundary();
   refreshAdminMapAreas();
-  // Cities
-  mb.cities.forEach(c => addCityMarker(c));
-  // Current pin
-  adminPinMarker = L.marker([D.location.lat,D.location.lng],{icon:makeAdminCurrentIcon(),draggable:true})
-    .addTo(adminMap)
-    .bindPopup(`<b>📍 ${D.location.city}</b>`);
-  adminPinMarker.on('dragend', function(e) {
-    const p = e.target.getLatLng();
-    D.location.lat = Math.round(p.lat*10000)/10000;
-    D.location.lng = Math.round(p.lng*10000)/10000;
-    set('loc-lat',D.location.lat); set('loc-lng',D.location.lng);
-    toast('Pin dragged! Save Map Data to keep.');
+  D.mapBoundaries.cities.forEach(function(c){
+    var icon = L.divIcon({html:"<div style='width:6px;height:6px;border-radius:50%;background:#2E3F6E;border:1.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);'></div>",iconSize:[6,6],iconAnchor:[3,3],className:""});
+    L.marker([c.lat,c.lng],{icon:icon}).addTo(adminMap).bindPopup("<b>"+c.name+"</b>");
   });
+  adminPinMarker = L.marker([D.location.lat,D.location.lng],{icon:makeAdminCurrentIcon(),draggable:true}).addTo(adminMap).bindPopup("<b>"+D.location.city+"</b>");
+  adminPinMarker.on("dragend", function(e) {
+    var p = e.target.getLatLng();
+    D.location.lat=Math.round(p.lat*10000)/10000; D.location.lng=Math.round(p.lng*10000)/10000;
+    s("loc-lat",D.location.lat); s("loc-lng",D.location.lng);
+  });
+}
+
+function refreshAdminMapBoundary() {
+  if (!adminMap) return;
+  if (missionBoundaryLayer) adminMap.removeLayer(missionBoundaryLayer);
+  if (D.mapBoundaries.missionBoundary && D.mapBoundaries.missionBoundary.length > 2) {
+    missionBoundaryLayer = L.polygon(D.mapBoundaries.missionBoundary,{color:"#1A2744",weight:2.5,fillColor:"rgba(201,168,76,0.1)",fillOpacity:1,dashArray:"5,4"}).addTo(adminMap);
+  }
 }
 
 function refreshAdminMapAreas() {
-  if (areaLayerGroup) areaLayerGroup.clearLayers();
-  D.mapBoundaries.areas.forEach(a => {
+  if (!adminMap || !areaLayerGroup) return;
+  areaLayerGroup.clearLayers();
+  D.mapBoundaries.areas.forEach(function(a){
     if (a.boundary && a.boundary.length>2) {
-      L.polygon(a.boundary,{color:AREA_COLORS[a.status]||'#999',weight:2,fillColor:AREA_COLORS[a.status],fillOpacity:.18}).addTo(areaLayerGroup);
+      L.polygon(a.boundary,{color:AREA_COLORS[a.status]||"#999",weight:2,fillColor:AREA_COLORS[a.status],fillOpacity:.18}).addTo(areaLayerGroup);
     }
-    const icon = a.status==='current' ? makeAdminCurrentIcon() : L.divIcon({html:`<div style="width:13px;height:13px;border-radius:50%;background:${AREA_COLORS[a.status]};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>`,iconSize:[13,13],iconAnchor:[6,6],className:''});
-    L.marker([a.lat,a.lng],{icon}).addTo(areaLayerGroup).bindPopup(`<b>${a.name}</b><br><small>${a.status}</small>`);
+    var icon = a.status==="current" ? makeAdminCurrentIcon() : L.divIcon({html:"<div style='width:12px;height:12px;border-radius:50%;background:"+(AREA_COLORS[a.status]||"#999")+";border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);'></div>",iconSize:[12,12],iconAnchor:[6,6],className:""});
+    L.marker([a.lat,a.lng],{icon:icon}).addTo(areaLayerGroup).bindPopup("<b>"+a.name+"</b><br><small>"+a.status+"</small>");
   });
 }
 
-function addCityMarker(c) {
-  if (!adminMap) return;
-  const icon = L.divIcon({html:`<div style="width:7px;height:7px;border-radius:50%;background:#2E3F6E;border:1.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>`,iconSize:[7,7],iconAnchor:[3,3],className:''});
-  L.marker([c.lat,c.lng],{icon}).addTo(adminMap).bindPopup(`<b>${c.name}</b>`);
-}
-
 function makeAdminCurrentIcon() {
-  return L.divIcon({html:`<div style="width:20px;height:20px;border-radius:50%;background:#C9A84C;border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,.4);"></div>`,iconSize:[20,20],iconAnchor:[10,10],className:''});
+  return L.divIcon({html:"<div style='width:18px;height:18px;border-radius:50%;background:#C9A84C;border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,.4);'></div>",iconSize:[18,18],iconAnchor:[9,9],className:""});
 }
 
 function adminSetLayer(type, btn) {
   if (!adminMap) return;
-  document.querySelectorAll('.layer-btn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  adminMap.removeLayer(adminLayer);
-  adminLayer = adminLayers[type].addTo(adminMap);
+  document.querySelectorAll(".map-tb-btn").forEach(function(b){ b.classList.remove("on"); });
+  btn.classList.add("on");
+  adminMap.removeLayer(adminTileLayer);
+  adminTileLayer = adminTileLayers[type].addTo(adminMap);
 }
 
 function importBoundary() {
   try {
-    const raw = get('boundary-json').trim();
-    const coords = JSON.parse(raw);
-    if (!Array.isArray(coords) || !Array.isArray(coords[0])) throw new Error('Bad format');
+    var raw = g("boundary-json").trim();
+    var coords = JSON.parse(raw);
+    if (!Array.isArray(coords)||!Array.isArray(coords[0])) throw new Error("Bad format");
     D.mapBoundaries.missionBoundary = coords;
-    if (missionBoundaryLayer) adminMap.removeLayer(missionBoundaryLayer);
-    missionBoundaryLayer = L.polygon(coords,{color:'#1A2744',weight:2.5,fillColor:'rgba(201,168,76,0.1)',fillOpacity:1,dashArray:'5,4'}).addTo(adminMap);
-    adminMap.fitBounds(missionBoundaryLayer.getBounds());
-    saveLocal(); toast('Mission boundary imported! ✅');
-  } catch(e) { toast('Invalid JSON format. Expected [[lat,lng],[lat,lng],…]', '#c0392b'); }
+    refreshAdminMapBoundary();
+    if (missionBoundaryLayer) adminMap.fitBounds(missionBoundaryLayer.getBounds());
+    saveLocal(); toast("Boundary imported!");
+  } catch(e) { toast("Invalid format. Expected [[lat,lng],[lat,lng],...]","#c0392b"); }
 }
 
-function clearMissionBoundary() {
-  if (!confirm('Clear the mission boundary?')) return;
+function clearBoundary() {
+  if (!confirm("Clear mission boundary?")) return;
   D.mapBoundaries.missionBoundary = [];
   if (missionBoundaryLayer) { adminMap.removeLayer(missionBoundaryLayer); missionBoundaryLayer=null; }
-  set('boundary-json',''); saveLocal(); toast('Boundary cleared');
+  s("boundary-json",""); saveLocal(); toast("Boundary cleared");
 }
 
 function updatePinLabel() {
-  D.location.city = get('loc-city');
-  if (adminPinMarker) adminPinMarker.setPopupContent(`<b>📍 ${D.location.city}</b>`);
+  D.location.city = g("loc-city");
+  if (adminPinMarker) adminPinMarker.setPopupContent("<b>"+D.location.city+"</b>");
 }
 
-function selectArea(i) { document.querySelectorAll('.area-row').forEach((r,j)=>r.classList.toggle('cur',j===i)); }
-function addArea() { editingAreaIdx = null; ['am-name','am-start','am-end'].forEach(id=>set(id,'')); set('am-lat',''); set('am-lng',''); document.getElementById('area-modal').classList.add('on'); }
-function editArea(i,e) { e.stopPropagation(); editingAreaIdx=i; const a=D.mapBoundaries.areas[i]; set('am-name',a.name); set('am-status',a.status); set('am-lat',a.lat); set('am-lng',a.lng); set('am-start',a.startDate||''); set('am-end',a.endDate||''); document.getElementById('area-modal').classList.add('on'); }
-function closeAreaModal() { document.getElementById('area-modal').classList.remove('on'); editingAreaIdx=null; }
+function addArea() {
+  var name = prompt("Area name (e.g. Rexburg):"); if (!name) return;
+  var lat  = parseFloat(prompt("Latitude (center of area, e.g. 43.82):")); if (isNaN(lat)) return;
+  var lng  = parseFloat(prompt("Longitude (e.g. -111.79):")); if (isNaN(lng)) return;
+  var stat = prompt("Status (completed / current / future):") || "future";
+  var sd   = prompt("Start date (e.g. March 2024):") || "";
+  D.mapBoundaries.areas.push({id:name.toLowerCase().replace(/\s+/g,"-"),name:name,status:stat,lat:lat,lng:lng,startDate:sd,endDate:null,boundary:[]});
+  saveLocal(); populateAreaList(); refreshAdminMapAreas(); toast(name + " added!");
+}
 
-// ═══════════════════════════════════════════════════════════
+function editArea(i, e) {
+  if (e) e.stopPropagation();
+  var a = D.mapBoundaries.areas[i];
+  var nn = prompt("Name:", a.name); if (nn===null) return;
+  var ns = prompt("Status (completed/current/future):", a.status)||a.status;
+  a.name=nn; a.status=ns;
+  saveLocal(); populateAreaList(); refreshAdminMapAreas(); toast("Area updated!");
+}
+
+// =========================================
 // GITHUB PUSH
-// ═══════════════════════════════════════════════════════════
+// =========================================
+var DATA_FILE = "data.json";
+
 async function pushToGitHub() {
   if (!GH.token || !GH.user || !GH.repo) {
-    toast('Configure GitHub settings first! (GitHub / Publish panel)', '#c0392b');
-    sw('github', document.querySelector('[onclick*=github]')); return;
+    toast("Configure GitHub settings first! (GitHub / Publish panel)","#c0392b");
+    sw("github", document.querySelector("[onclick*=github]"));
+    return;
   }
-  const msg = get('gh-commit-msg') || ('Update mission data — ' + new Date().toLocaleDateString());
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(D, null, 2))));
-  log('Pushing to GitHub…');
-  updateGHStatus('pushing');
+  var btn = document.getElementById("pushBtn");
+  btn.disabled = true; btn.textContent = "Pushing...";
+  var msg = g("gh-commit-msg") || ("Update mission data - " + new Date().toLocaleDateString());
+  // Remove internal _ts before committing
+  var toCommit = JSON.parse(JSON.stringify(D));
+  delete toCommit._ts;
+  var content = btoa(unescape(encodeURIComponent(JSON.stringify(toCommit, null, 2))));
+  var headers = {"Authorization":"token "+GH.token,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"};
+  var branch = GH.branch || "main";
+  addLog("Pushing to GitHub...");
+  updateGHStatus("pushing");
 
   try {
-    // Get current file SHA (needed for update)
-    const headers = { 'Authorization':'token '+GH.token, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' };
-    const branch = GH.branch || 'main';
-    let sha = null;
-    try {
-      const getRes = await fetch(`https://api.github.com/repos/${GH.user}/${GH.repo}/contents/${DATA_PATH}?ref=${branch}`, {headers});
-      if (getRes.ok) { const d=await getRes.json(); sha=d.sha; log('Got current file SHA ✅'); }
-      else { log('File does not exist yet — will create it.'); }
-    } catch(e) { log('Could not get SHA (will try create): '+e.message); }
+    var sha = null;
+    var getRes = await fetch("https://api.github.com/repos/"+GH.user+"/"+GH.repo+"/contents/"+DATA_FILE+"?ref="+branch, {headers:headers});
+    if (getRes.ok) { var gd = await getRes.json(); sha = gd.sha; addLog("Got file SHA."); }
+    else { addLog("File not found - will create it."); }
 
-    // Push
-    const body = { message:msg, content, branch };
+    var body = {message:msg, content:content, branch:branch};
     if (sha) body.sha = sha;
-    const putRes = await fetch(`https://api.github.com/repos/${GH.user}/${GH.repo}/contents/${DATA_PATH}`, {method:'PUT',headers,body:JSON.stringify(body)});
-    const putData = await putRes.json();
+    var putRes = await fetch("https://api.github.com/repos/"+GH.user+"/"+GH.repo+"/contents/"+DATA_FILE, {method:"PUT",headers:headers,body:JSON.stringify(body)});
+    var putData = await putRes.json();
 
     if (putRes.ok) {
-      log('✅ Successfully pushed to GitHub!');
-      log('Commit: ' + putData.commit?.sha?.slice(0,7));
-      log('Site will update at: https://' + GH.user + '.github.io/' + GH.repo);
-      updateGHStatus('ok');
-      toast('🎉 Pushed to GitHub! Site updating…');
+      addLog("Pushed successfully! Commit: " + (putData.commit&&putData.commit.sha?putData.commit.sha.slice(0,7):"ok"));
+      addLog("Site: https://"+GH.user+".github.io/"+GH.repo);
+      updateGHStatus("ok");
+      toast("Pushed to GitHub! Site updating in 1-2 minutes.");
     } else {
-      log('❌ Push failed: ' + putData.message);
-      updateGHStatus('err');
-      toast('GitHub push failed: ' + putData.message, '#c0392b');
+      addLog("Push failed: " + (putData.message||"unknown error"));
+      updateGHStatus("err");
+      toast("Push failed: " + (putData.message||"unknown error"),"#c0392b");
     }
-  } catch(e) {
-    log('❌ Network error: ' + e.message);
-    updateGHStatus('err');
-    toast('GitHub error: ' + e.message, '#c0392b');
+  } catch(err) {
+    addLog("Error: " + err.message);
+    updateGHStatus("err");
+    toast("Error: " + err.message,"#c0392b");
   }
+  btn.disabled = false; btn.textContent = "Push to GitHub";
 }
 
-const DATA_PATH = 'data.json';
+function addLog(msg) {
+  var el = document.getElementById("push-log");
+  if (el) el.innerHTML += msg + "<br>";
+}
 
 function updateGHStatus(state) {
-  const el = document.getElementById('gh-status');
-  if (state==='ok' || (GH.user && GH.repo && GH.token && !state)) {
-    el.textContent = '🟢 ' + (GH.user||'') + '/' + (GH.repo||'');
-    el.className = 'github-status ok';
-  } else if (state==='err') {
-    el.textContent = '🔴 Push failed'; el.className = 'github-status err';
-  } else if (state==='pushing') {
-    el.textContent = '🟡 Pushing…'; el.className = 'github-status';
+  var el = document.getElementById("gh-status");
+  if (!el) return;
+  if (state==="ok" || (!state && GH.user && GH.repo && GH.token)) {
+    el.textContent = "Connected: " + (GH.user||"") + "/" + (GH.repo||""); el.className="gh-status ok";
+  } else if (state==="err") {
+    el.textContent = "Push failed"; el.className="gh-status err";
+  } else if (state==="pushing") {
+    el.textContent = "Pushing..."; el.className="gh-status";
   } else if (GH.user && GH.repo && !GH.token) {
-    el.textContent = '🟡 Token missing'; el.className = 'github-status';
+    el.textContent = "Token missing"; el.className="gh-status";
   } else {
-    el.textContent = '⚪ GitHub not configured'; el.className = 'github-status';
+    el.textContent = "GitHub not configured"; el.className="gh-status";
   }
 }
 
-function log(msg) {
-  const el = document.getElementById('push-log');
-  if (el) el.innerHTML += msg + '<br>';
-  console.log('[GH]', msg);
-}
-
-// ═══════════════════════════════════════════════════════════
-// SETTINGS
-// ═══════════════════════════════════════════════════════════
-function changePassword() {
-  const cur = get('cur-pw'), np = get('new-pw'), cp = get('conf-pw');
-  const stored = localStorage.getItem(PW_KEY) || 'mission2024';
-  if (cur !== stored) { toast('Current password incorrect', '#c0392b'); return; }
-  if (!np)            { toast('New password cannot be empty', '#c0392b'); return; }
-  if (np !== cp)      { toast('Passwords do not match', '#c0392b'); return; }
-  localStorage.setItem(PW_KEY, np);
-  ['cur-pw','new-pw','conf-pw'].forEach(id=>set(id,''));
-  toast('Password updated! 🔐');
-}
-
-// ═══════════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════════
-function doLogin() {
-  const pw = document.getElementById('pwInput').value;
-  const stored = localStorage.getItem(PW_KEY) || 'mission2024';
-  if (pw === stored) {
-    document.getElementById('loginScreen').classList.add('gone');
-    document.body.classList.add('authed');
-    init();
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-  }
-}
-function logout() {
-  document.body.classList.remove('authed');
-  document.getElementById('loginScreen').classList.remove('gone');
-  document.getElementById('pwInput').value = '';
-  document.getElementById('loginErr').style.display = 'none';
-}
-
-// ═══════════════════════════════════════════════════════════
+// =========================================
 // PANEL SWITCHING
-// ═══════════════════════════════════════════════════════════
-const panelTitles = {dash:'Dashboard',profile:'Profile & About Me',progress:'Mission Progress',map:'Mission Map Editor',updates:'Weekly Updates',photos:'Photo Gallery',scripture:'Scripture & Inspiration',timeline:'Mission Timeline',github:'GitHub / Publish',settings:'Settings',messages:'Messages',subs:'Subscribers'};
+// =========================================
 function sw(id, el) {
-  document.querySelectorAll('.apanel').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.si').forEach(s=>s.classList.remove('on'));
-  document.getElementById('ap-'+id).classList.add('on');
-  if (el) el.classList.add('on');
-  document.getElementById('page-title').textContent = panelTitles[id]||id;
-  if (id==='map') setTimeout(initAdminMap, 200);
+  document.querySelectorAll(".apanel").forEach(function(p){ p.classList.remove("on"); });
+  document.querySelectorAll(".si").forEach(function(s){ s.classList.remove("on"); });
+  var panel = document.getElementById("ap-"+id);
+  if (panel) panel.classList.add("on");
+  if (el) el.classList.add("on");
+  document.getElementById("page-title").textContent = panelTitles[id]||id;
+  if (id==="map") setTimeout(initAdminMap, 200);
+  if (id==="updates") populatePosts();
+  if (id==="photos") populatePhotosPanel();
+  if (id==="github") populateGHConfig();
 }
 
-// ═══════════════════════════════════════════════════════════
+// =========================================
+// MODALS
+// =========================================
+function closeModal(id) { document.getElementById(id).classList.remove("on"); }
+document.getElementById("edit-modal").addEventListener("click",function(e){ if(e.target===this) closeModal("edit-modal"); });
+document.getElementById("photo-modal").addEventListener("click",function(e){ if(e.target===this) closeModal("photo-modal"); });
+
+// =========================================
 // RANGE SLIDERS
-// ═══════════════════════════════════════════════════════════
+// =========================================
 function rv(el, badgeId, fmt) {
-  const v = parseInt(el.value);
-  el.style.setProperty('--rv', v+'%');
+  var v = parseInt(el.value);
+  el.style.setProperty("--rv", v+"%");
   document.getElementById(badgeId).textContent = fmt(v);
 }
 function rvGoal(el) {
-  const v = parseInt(el.value);
-  el.style.setProperty('--rv', Math.round(v/12*100)+'%');
-  document.getElementById('rv-goal').textContent = v + ' / 12';
+  var v = parseInt(el.value);
+  el.style.setProperty("--rv", Math.round(v/12*100)+"%");
+  document.getElementById("rv-goal").textContent = v + " / 12";
 }
-function setRange(id, val, badgeId, fmt) {
-  const el = document.getElementById(id); if (!el) return;
-  el.value = val; el.style.setProperty('--rv', val+'%');
+function setRv(id, val, badgeId, fmt) {
+  var el = document.getElementById(id); if (!el) return;
+  el.value = val; el.style.setProperty("--rv", val+"%");
   document.getElementById(badgeId).textContent = fmt(val);
 }
 
-// ═══════════════════════════════════════════════════════════
-// MODAL
-// ═══════════════════════════════════════════════════════════
-function closeModal() { document.getElementById('edit-modal').classList.remove('on'); }
-document.getElementById('edit-modal').addEventListener('click',e=>{if(e.target===document.getElementById('edit-modal'))closeModal();});
-document.getElementById('area-modal').addEventListener('click',e=>{if(e.target===document.getElementById('area-modal'))closeAreaModal();});
-
-// ═══════════════════════════════════════════════════════════
+// =========================================
 // TOAST
-// ═══════════════════════════════════════════════════════════
-let toastT;
-function toast(msg, color='#2a7a4a') {
-  clearTimeout(toastT);
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.background = color;
-  t.classList.add('on');
-  toastT = setTimeout(()=>t.classList.remove('on'), 3400);
+// =========================================
+var _tt;
+function toast(msg, color) {
+  clearTimeout(_tt);
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.style.background = color||"#2a7a4a";
+  t.classList.add("on");
+  _tt = setTimeout(function(){ t.classList.remove("on"); }, 3400);
 }
 
-// ═══════════════════════════════════════════════════════════
+// =========================================
 // HELPERS
-// ═══════════════════════════════════════════════════════════
-function get(id)    { return document.getElementById(id)?.value || ''; }
-function set(id,v)  { const el=document.getElementById(id); if(el) el.value=v; }
-function formatDate(s) {
-  if (!s) return new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  return new Date(s).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+// =========================================
+function g(id) { var el=document.getElementById(id); return el?el.value:""; }
+function s(id,v){ var el=document.getElementById(id); if(el) el.value=v; }
+function formatDate(str) {
+  if (!str) return new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+  return new Date(str+("T12:00:00")).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
 }
 
-document.getElementById('pwInput').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+// drag & drop on upload area
+var ua = document.getElementById("uploadArea");
+if (ua) {
+  ua.addEventListener("dragover",function(e){ e.preventDefault(); ua.classList.add("drag-over"); });
+  ua.addEventListener("dragleave",function(){ ua.classList.remove("drag-over"); });
+  ua.addEventListener("drop",function(e){ e.preventDefault(); ua.classList.remove("drag-over"); handlePhotoFiles(e.dataTransfer.files); });
+}
 </script>
 </body>
 </html>

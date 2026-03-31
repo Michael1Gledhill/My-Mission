@@ -12,16 +12,7 @@
     "currentArea": "Idaho Falls West",
     "bio": "Hi! I'm Michael Gledhill — Elder Gledhill out here. I grew up in American Fork, Utah as the oldest of five kids in a family that loves the gospel, hiking, and way too much football. I've been a member of The Church of Jesus Christ of Latter-day Saints my whole life, but it was during my senior year of high school that I gained my own testimony — through prayer, scripture study, and watching the gospel transform people around me.",
     "testimony": "I know that God lives and that He knows each of us by name. I know that Jesus Christ is our Savior — not just a historical figure, but a living, present, active force in our lives when we invite Him in. I know that the Book of Mormon is true scripture, and that reading it with real intent will change you. And I know — more than I know almost anything — that this work matters. These 24 months are the best thing I have ever done.",
-    "hobbies": [
-      "Basketball",
-      "Guitar",
-      "Hiking",
-      "Reading",
-      "BYU Football",
-      "Writing",
-      "Music",
-      "Cooking"
-    ],
+    "hobbies": ["Basketball", "Guitar", "Hiking", "Reading", "BYU Football", "Writing", "Music", "Cooking"],
     "collegePlans": "BYU-Idaho — Communications"
   },
   "stats": {
@@ -48,118 +39,12 @@
   },
   "mapBoundaries": {
     "missionBoundary": [
-      [
-        44.7,
-        -115.5
-      ],
-      [
-        44.9,
-        -114.2
-      ],
-      [
-        45.1,
-        -113.5
-      ],
-      [
-        45.5,
-        -113.2
-      ],
-      [
-        45.7,
-        -112.8
-      ],
-      [
-        45.7,
-        -111.5
-      ],
-      [
-        45.4,
-        -111
-      ],
-      [
-        45.2,
-        -110.8
-      ],
-      [
-        44.8,
-        -110.7
-      ],
-      [
-        44.5,
-        -110.8
-      ],
-      [
-        44.2,
-        -111
-      ],
-      [
-        44.1,
-        -111.3
-      ],
-      [
-        43.8,
-        -111.5
-      ],
-      [
-        43.5,
-        -111.5
-      ],
-      [
-        43.2,
-        -111.6
-      ],
-      [
-        43,
-        -112
-      ],
-      [
-        42.5,
-        -112.2
-      ],
-      [
-        42,
-        -112.5
-      ],
-      [
-        41.8,
-        -112.8
-      ],
-      [
-        41.9,
-        -113.5
-      ],
-      [
-        42,
-        -114
-      ],
-      [
-        42.1,
-        -114.5
-      ],
-      [
-        42.5,
-        -115
-      ],
-      [
-        43,
-        -115.5
-      ],
-      [
-        43.5,
-        -115.8
-      ],
-      [
-        44,
-        -115.7
-      ],
-      [
-        44.3,
-        -115.6
-      ],
-      [
-        44.7,
-        -115.5
-      ]
+      [44.7,-115.5],[44.9,-114.2],[45.1,-113.5],[45.5,-113.2],[45.7,-112.8],
+      [45.7,-111.5],[45.4,-111.0],[45.2,-110.8],[44.8,-110.7],[44.5,-110.8],
+      [44.2,-111.0],[44.1,-111.3],[43.8,-111.5],[43.5,-111.5],[43.2,-111.6],
+      [43.0,-112.0],[42.5,-112.2],[42.0,-112.5],[41.8,-112.8],[41.9,-113.5],
+      [42.0,-114.0],[42.1,-114.5],[42.5,-115.0],[43.0,-115.5],[43.5,-115.8],
+      [44.0,-115.7],[44.3,-115.6],[44.7,-115.5]
     ],
     "areas": [
       {
@@ -194,111 +79,26 @@
       }
     ],
     "cities": [
-      {
-        "name": "Twin Falls",
-        "lat": 42.5629,
-        "lng": -114.4609,
-        "type": "city"
-      },
-      {
-        "name": "Blackfoot",
-        "lat": 43.1908,
-        "lng": -112.3449,
-        "type": "city"
-      },
-      {
-        "name": "American Falls",
-        "lat": 42.7877,
-        "lng": -112.8607,
-        "type": "city"
-      },
-      {
-        "name": "Rigby",
-        "lat": 43.6724,
-        "lng": -111.9135,
-        "type": "city"
-      },
-      {
-        "name": "St Anthony",
-        "lat": 43.969,
-        "lng": -111.6824,
-        "type": "city"
-      },
-      {
-        "name": "Soda Springs",
-        "lat": 42.6541,
-        "lng": -111.6046,
-        "type": "city"
-      },
-      {
-        "name": "Montpelier",
-        "lat": 42.3213,
-        "lng": -111.2988,
-        "type": "city"
-      },
-      {
-        "name": "Preston",
-        "lat": 42.0963,
-        "lng": -111.8766,
-        "type": "city"
-      },
-      {
-        "name": "Salmon",
-        "lat": 45.1763,
-        "lng": -113.8958,
-        "type": "city"
-      },
-      {
-        "name": "Ashton",
-        "lat": 44.0716,
-        "lng": -111.4488,
-        "type": "city"
-      },
-      {
-        "name": "Burley",
-        "lat": 42.536,
-        "lng": -113.7918,
-        "type": "city"
-      }
+      {"name":"Twin Falls","lat":42.5629,"lng":-114.4609,"type":"city"},
+      {"name":"Blackfoot","lat":43.1908,"lng":-112.3449,"type":"city"},
+      {"name":"American Falls","lat":42.7877,"lng":-112.8607,"type":"city"},
+      {"name":"Rigby","lat":43.6724,"lng":-111.9135,"type":"city"},
+      {"name":"St Anthony","lat":43.9690,"lng":-111.6824,"type":"city"},
+      {"name":"Soda Springs","lat":42.6541,"lng":-111.6046,"type":"city"},
+      {"name":"Montpelier","lat":42.3213,"lng":-111.2988,"type":"city"},
+      {"name":"Preston","lat":42.0963,"lng":-111.8766,"type":"city"},
+      {"name":"Salmon","lat":45.1763,"lng":-113.8958,"type":"city"},
+      {"name":"Ashton","lat":44.0716,"lng":-111.4488,"type":"city"},
+      {"name":"Burley","lat":42.5360,"lng":-113.7918,"type":"city"}
     ]
   },
   "timeline": [
-    {
-      "id": 1,
-      "date": "January 2024",
-      "event": "Entered the MTC in Provo, Utah",
-      "status": "done"
-    },
-    {
-      "id": 2,
-      "date": "March 2024",
-      "event": "Arrived in Idaho — First area: Rexburg",
-      "status": "done"
-    },
-    {
-      "id": 3,
-      "date": "September 2024",
-      "event": "Transferred to Pocatello",
-      "status": "done"
-    },
-    {
-      "id": 4,
-      "date": "January 2025",
-      "event": "Transferred to Idaho Falls West",
-      "status": "current"
-    },
-    {
-      "id": 5,
-      "date": "July 2025",
-      "event": "18-month mark 🎉",
-      "status": "future"
-    },
-    {
-      "id": 6,
-      "date": "January 2026",
-      "event": "Return Home — Mission Complete!",
-      "status": "future"
-    }
+    {"id":1,"date":"January 2024","event":"Entered the MTC in Provo, Utah","status":"done"},
+    {"id":2,"date":"March 2024","event":"Arrived in Idaho — First area: Rexburg","status":"done"},
+    {"id":3,"date":"September 2024","event":"Transferred to Pocatello","status":"done"},
+    {"id":4,"date":"January 2025","event":"Transferred to Idaho Falls West","status":"current"},
+    {"id":5,"date":"July 2025","event":"18-month mark 🎉","status":"future"},
+    {"id":6,"date":"January 2026","event":"Return Home — Mission Complete!","status":"future"}
   ],
   "posts": [
     {
@@ -310,11 +110,7 @@
       "body": "Dear family and friends,\n\nThis has been one of the most spiritual weeks of my entire mission. We've been teaching the Sorenson family for almost three months now, and this week something shifted. We were in their living room teaching about the Plan of Salvation, and you could feel the Spirit so strongly. The dad, who had been the most skeptical, started asking questions I've never heard an investigator ask. His heart is opening.\n\nWe also had a fantastic ward mission council meeting where we coordinated three member-present lessons. Members make ALL the difference — investigators trust them in a way they can't quite trust us yet as missionaries.\n\nThe weather has finally warmed up here. We biked 18 miles this week! My legs are thanking me... kind of. 😄 I love you all and feel your prayers every single day.\n\n– Elder Gledhill",
       "scripture": "And the Spirit shall be given unto you by the prayer of faith.",
       "scriptureRef": "D&C 42:14",
-      "tags": [
-        "Teaching",
-        "Investigators",
-        "Ward Mission"
-      ]
+      "tags": ["Teaching","Investigators","Ward Mission"]
     },
     {
       "id": 46,
@@ -325,11 +121,7 @@
       "body": "Dear family,\n\nTransfer calls came in on Saturday night and — I'm staying in Idaho Falls West! I honestly felt relief more than anything. We have so many promising investigators right now that I would have hated to leave. Elder Christensen is also staying, which means we get another full transfer together. He's one of the best companions I've had.\n\nSt. Patrick's Day was fun — half the ward showed up to church in green. One of our investigators, Sister Davis, attended sacrament meeting for the first time. She told us afterward she felt a peace she couldn't explain. Moments like that are why I'm here.\n\nThank you for all the letters this week — they seriously mean the world to me!\n\nLove, Elder Gledhill",
       "scripture": "I can do all things through Christ which strengtheneth me.",
       "scriptureRef": "Philippians 4:13",
-      "tags": [
-        "Transfers",
-        "Investigators",
-        "Zone"
-      ]
+      "tags": ["Transfers","Investigators","Zone"]
     },
     {
       "id": 45,
@@ -340,11 +132,7 @@
       "body": "Dear family,\n\nWe got to attend the baptism of Marcus Thompson this week — someone Elder Petersen and I started teaching back in September. I didn't think I'd ever get to see it, and then there I was, standing at the font with tears in my eyes.\n\nMarcus stood up and bore his testimony right after and said he'd been searching for peace his whole life and finally found it. I could barely hold it together. The gospel changes lives — I know that more firmly every single week.\n\nWe also had our zone conference with President and Sister Harmon. He challenged each of us to pick a Christlike attribute to focus on. I chose patience.\n\nWith love, Elder Gledhill",
       "scripture": "…how great shall be your joy with him in the kingdom of my Father!",
       "scriptureRef": "D&C 18:15",
-      "tags": [
-        "Baptism",
-        "Zone Conference",
-        "Spiritual"
-      ]
+      "tags": ["Baptism","Zone Conference","Spiritual"]
     },
     {
       "id": 44,
@@ -355,58 +143,29 @@
       "body": "Dear family,\n\nIdaho in March — sometimes it's 50 degrees, sometimes you get 8 inches of snow overnight. This week was the latter. We spent Monday shoveling driveways for elderly members in our ward, and every single house we finished led to a conversation about the gospel. Service really does open doors that knocking never could.\n\nWe had a powerful companionship study this week about the attributes of Christ. Elder Christensen and I have started role-playing lessons in the morning and it's made a huge difference in how confidently I teach.\n\nKeep the letters coming — they are fuel for the soul.\n\n— Elder Gledhill",
       "scripture": "By their fruits ye shall know them.",
       "scriptureRef": "Matthew 7:20",
-      "tags": [
-        "Service",
-        "Idaho Winter",
-        "Companionship"
-      ]
+      "tags": ["Service","Idaho Winter","Companionship"]
     }
   ],
-  "photos": [],
+  "photos": [
+    {"id":1,"emoji":"🌄","title":"Snake River at Sunset","desc":"The Snake River right at golden hour after a long day of teaching.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#b8d4f0,#7aaad8)","span":"r2"},
+    {"id":2,"emoji":"⛪","title":"Idaho Falls Temple","desc":"Every P-day we walk the temple grounds. There is nothing quite like it.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#f0d4b8,#d8a87a)","span":""},
+    {"id":3,"emoji":"🤝","title":"Zone Conference","desc":"All the missionaries from our zone after an incredible Zone Conference.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#b8f0cc,#7ad8a0)","span":""},
+    {"id":4,"emoji":"❄️","title":"Service in the Snow","desc":"Shoveled driveways for 6 hours. Tired but grateful — service opens hearts.","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#f0b8d0,#d87aa8)","span":""},
+    {"id":5,"emoji":"🚲","title":"18 Miles on Bikes","desc":"My companion Elder Christensen and I after our longest bike day yet!","album":"March 2025","date":"March 2025","bg":"linear-gradient(135deg,#d0b8f0,#a87ad8)","span":""},
+    {"id":6,"emoji":"🎉","title":"Transfer Day","desc":"Moving to Idaho Falls West! New area, new companion, same gospel.","album":"Early 2025","date":"January 2025","bg":"linear-gradient(135deg,#f0f0b8,#d8d47a)","span":""},
+    {"id":7,"emoji":"💧","title":"Baptism of Marcus Thompson","desc":"The day Marcus was baptized. One of the most spiritual moments of my mission.","album":"Early 2025","date":"March 2025","bg":"linear-gradient(135deg,#f0c8b8,#d8987a)","span":""},
+    {"id":8,"emoji":"✈️","title":"Arrived in Idaho!","desc":"Day 1 in the mission field. Terrified and excited all at once.","album":"2024","date":"March 2024","bg":"linear-gradient(135deg,#f0b8b8,#d87a7a)","span":""},
+    {"id":9,"emoji":"🍂","title":"Fall in Rexburg","desc":"Fall colors in our first area. I never knew Idaho was this beautiful.","album":"2024","date":"October 2024","bg":"linear-gradient(135deg,#e8f0b8,#c8d87a)","span":"c2 r2"},
+    {"id":10,"emoji":"🎓","title":"MTC Graduation","desc":"Last day at the MTC. We were ready!","album":"2024","date":"March 2024","bg":"linear-gradient(135deg,#b8d4f0,#7aaad8)","span":""}
+  ],
   "messages": [
-    {
-      "id": 1,
-      "name": "Grandma Ruth",
-      "email": "grandmaruth@gmail.com",
-      "relation": "Family member",
-      "message": "So proud of you Elder! We pray for you every morning.",
-      "date": "March 25, 2025",
-      "replied": false
-    },
-    {
-      "id": 2,
-      "name": "Tyler H.",
-      "email": "tylerh1994@yahoo.com",
-      "relation": "Friend from school",
-      "message": "Miss you man! Keep crushing it out there. Go Cougars!",
-      "date": "March 23, 2025",
-      "replied": false
-    },
-    {
-      "id": 3,
-      "name": "Sister Johnson",
-      "email": "sisterjohnson@gmail.com",
-      "relation": "Ward member",
-      "message": "Your testimony has strengthened mine. Thank you.",
-      "date": "March 21, 2025",
-      "replied": true
-    }
+    {"id":1,"name":"Grandma Ruth","email":"grandmaruth@gmail.com","relation":"Family member","message":"So proud of you Elder! We pray for you every morning.","date":"March 25, 2025","replied":false},
+    {"id":2,"name":"Tyler H.","email":"tylerh1994@yahoo.com","relation":"Friend from school","message":"Miss you man! Keep crushing it out there. Go Cougars!","date":"March 23, 2025","replied":false},
+    {"id":3,"name":"Sister Johnson","email":"sisterjohnson@gmail.com","relation":"Ward member","message":"Your testimony has strengthened mine. Thank you.","date":"March 21, 2025","replied":true}
   ],
   "subscribers": [
-    {
-      "email": "grandmaruth@gmail.com",
-      "date": "March 2024",
-      "relation": "Family"
-    },
-    {
-      "email": "tylerh1994@yahoo.com",
-      "date": "January 2025",
-      "relation": "Friend"
-    },
-    {
-      "email": "sisterjohnson@gmail.com",
-      "date": "February 2025",
-      "relation": "Ward"
-    }
+    {"email":"grandmaruth@gmail.com","date":"March 2024","relation":"Family"},
+    {"email":"tylerh1994@yahoo.com","date":"January 2025","relation":"Friend"},
+    {"email":"sisterjohnson@gmail.com","date":"February 2025","relation":"Ward"}
   ]
 }
