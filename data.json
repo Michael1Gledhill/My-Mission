@@ -275,15 +275,6 @@
   ],
   "messages": [
     {
-      "id": 1,
-      "name": "Grandma Ruth",
-      "email": "grandmaruth@gmail.com",
-      "relation": "Family member",
-      "message": "So proud of you Elder! We pray for you every morning.",
-      "date": "March 25, 2025",
-      "replied": false
-    },
-    {
       "id": 2,
       "name": "Tyler H.",
       "email": "tylerh1994@yahoo.com",
