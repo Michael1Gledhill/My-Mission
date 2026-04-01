@@ -10,6 +10,16 @@ export interface AppUser {
   status: UserStatus;
   requestedAt: string;
   decidedAt?: string;
+  failedLoginAttempts?: number;
+  lockoutUntil?: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actor: string;
+  action: string;
+  details: string;
 }
 
 export interface MissionContent {

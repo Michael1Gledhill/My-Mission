@@ -1,8 +1,9 @@
-import type { AppUser, MissionContent } from '../types';
+import type { AppUser, AuditLogEntry, MissionContent } from '../types';
 
 const USERS_KEY = 'mission_users_v2';
 const CONTENT_KEY = 'mission_content_v2';
 const SESSION_KEY = 'mission_session_v2';
+const AUDIT_LOG_KEY = 'mission_audit_log_v1';
 
 export function loadUsers(): AppUser[] {
   try {
@@ -39,4 +40,16 @@ export function saveSession(email: string | null): void {
     return;
   }
   localStorage.setItem(SESSION_KEY, email);
+}
+
+export function loadAuditLog(): AuditLogEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) ?? '[]') as AuditLogEntry[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveAuditLog(entries: AuditLogEntry[]): void {
+  localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(entries));
 }

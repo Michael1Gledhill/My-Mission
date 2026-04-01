@@ -15,6 +15,23 @@ body {
   color: var(--text);
 }
 
+.skipLink {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #0b1322;
+  color: #fff;
+  border: 1px solid #5b7bc0;
+  border-radius: .4rem;
+  padding: .45rem .65rem;
+  z-index: 2000;
+}
+
+.skipLink:focus {
+  left: .75rem;
+  top: .75rem;
+}
+
 .page { max-width: 1100px; margin: 0 auto; padding: 1rem; }
 .topbar { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
 .topbar h1 { margin: 0; }
@@ -30,12 +47,66 @@ button {
   cursor: pointer;
 }
 button:hover { border-color: var(--accent); }
+button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+main:focus-visible {
+  outline: 2px solid #8fb2ff;
+  outline-offset: 2px;
+}
 
 .message {
   background: #16233d;
   border: 1px solid #37518b;
   padding: .7rem;
   border-radius: .5rem;
+}
+
+.hintError {
+  color: #fca5a5;
+  display: block;
+  margin-top: .1rem;
+}
+
+.hintInfo {
+  color: var(--muted);
+  display: block;
+  margin-top: .1rem;
+}
+
+.toastStack {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  z-index: 1000;
+  max-width: min(92vw, 360px);
+}
+
+.toast {
+  padding: .65rem .8rem;
+  border-radius: .55rem;
+  border: 1px solid #3f4e70;
+  background: #182540;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+}
+
+.toast-success {
+  border-color: #2c7a52;
+}
+
+.toast-info {
+  border-color: #4664a3;
 }
 
 .grid {
@@ -69,7 +140,81 @@ input, textarea, select {
   color: var(--text);
 }
 
+input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
 .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .04em;
+  word-break: break-all;
+}
+
+.strengthWrap {
+  margin-top: .35rem;
+  margin-bottom: .4rem;
+}
+
+.strengthBar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #0f1728;
+  border: 1px solid #334362;
+  overflow: hidden;
+  margin: .2rem 0 .4rem;
+}
+
+.strengthFill {
+  height: 100%;
+  width: 20%;
+  transition: width .18s ease;
+}
+
+.strength-1 { width: 20%; background: #ef4444; }
+.strength-2 { width: 40%; background: #f97316; }
+.strength-3 { width: 60%; background: #eab308; }
+.strength-4 { width: 80%; background: #22c55e; }
+.strength-5 { width: 100%; background: #10b981; }
+
+.securityHint {
+  margin-top: .75rem;
+  padding: .6rem .7rem;
+  border: 1px solid #334362;
+  border-radius: .5rem;
+  background: #101a2d;
+}
+
+.securityHint summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.securityHint p {
+  margin: .45rem 0;
+  color: var(--muted);
+}
+
+.testimonyQuote {
+  margin: .4rem 0;
+  padding-left: .7rem;
+  border-left: 3px solid var(--accent);
+  color: var(--text);
+  font-style: italic;
+}
+
+.mutedLine {
+  color: var(--muted);
+}
+
+.previewCard {
+  margin-top: .4rem;
+  background: #121e34;
+}
 
 .photoGrid {
   display: grid;
@@ -83,4 +228,66 @@ input, textarea, select {
   object-fit: cover;
   border-radius: .45rem;
   border: 1px solid #314262;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: .5rem;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.statCard strong {
+  font-size: 1.2rem;
+}
+
+.statCard small {
+  color: var(--muted);
+}
+
+.updatedBadge {
+  margin: 0 0 .6rem;
+  padding: .45rem .6rem;
+  border: 1px solid #3a4f7a;
+  border-radius: .45rem;
+  background: #101a2f;
+  color: var(--muted);
+}
+
+.actionChip {
+  display: inline-block;
+  padding: .2rem .5rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  text-transform: capitalize;
+  border: 1px solid #4a5c83;
+}
+
+.actionChip-default {
+  background: #1a2845;
+}
+
+.actionChip-auth {
+  background: #2a1f46;
+  border-color: #7b63b7;
+}
+
+.actionChip-user {
+  background: #1f3b33;
+  border-color: #4ea380;
+}
+
+.actionChip-content {
+  background: #3b331f;
+  border-color: #af9451;
+}
+
+.actionChip-audit {
+  background: #1f3247;
+  border-color: #5f88b8;
 }
