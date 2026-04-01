@@ -20,6 +20,9 @@ jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,4 +47,5 @@ jobs:
           path: ./dist
 
       - name: Deploy
+        id: deployment
         uses: actions/deploy-pages@v4
