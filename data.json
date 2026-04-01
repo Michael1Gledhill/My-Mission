@@ -2,36 +2,32 @@
   "missionary": {
     "firstName": "Michael",
     "lastName": "Gledhill",
-    "hometown": "American Fork, Utah",
+    "hometown": "Elizabethtown, Kentucky ",
     "age": 21,
     "missionName": "Idaho Idaho Falls Mission",
     "missionPresident": "President & Sister Harmon",
-    "startDate": "2024-01-08",
-    "endDate": "2026-01-08",
-    "currentCompanion": "Elder Christensen",
-    "currentArea": "Idaho Falls West",
-    "bio": "Hi! I'm Michael Gledhill — Elder Gledhill out here. I grew up in American Fork, Utah as the oldest of five kids in a family that loves the gospel, hiking, and way too much football. I've been a member of The Church of Jesus Christ of Latter-day Saints my whole life, but it was during my senior year of high school that I gained my own testimony — through prayer, scripture study, and watching the gospel transform people around me.",
+    "startDate": "2026-05-20",
+    "endDate": "2028-05-24",
+    "currentCompanion": "N/A",
+    "currentArea": "N/A",
+    "bio": "Hi! I'm Michael Gledhill — Elder Gledhill out here. I grew up in Center, Kentucky as the youngest of fore kids in a family that loves the gospel, the out doors, and of cores Civil Air Patrol. I've been a member of The Church of Jesus Christ of Latter-day Saints my whole life, but it was during my senior year of high school that I gained my own testimony — through prayer, scripture study, and watching the gospel transform people around me.",
     "testimony": "I know that God lives and that He knows each of us by name. I know that Jesus Christ is our Savior — not just a historical figure, but a living, present, active force in our lives when we invite Him in. I know that the Book of Mormon is true scripture, and that reading it with real intent will change you. And I know — more than I know almost anything — that this work matters. These 24 months are the best thing I have ever done.",
     "hobbies": [
-      "Basketball",
-      "Guitar",
       "Hiking",
-      "Reading",
-      "BYU Football",
-      "Writing",
+      "Horce back riding",
       "Music",
       "Cooking"
     ],
-    "collegePlans": "BYU-Idaho — Communications"
+    "collegePlans": "BYU-Idaho — Computer science "
   },
   "stats": {
-    "monthsServed": 14,
+    "monthsServed": 0,
     "monthsTotal": 24,
     "weeklyUpdates": 47,
-    "areasServed": 3,
-    "overallProgress": 58,
-    "areaProgress": 50,
-    "weeklyGoalDiscussions": 8,
+    "areasServed": 0,
+    "overallProgress": 0,
+    "areaProgress": 0,
+    "weeklyGoalDiscussions": 0,
     "weeklyGoalTarget": 12,
     "subscribers": 124
   },
@@ -262,106 +258,8 @@
       }
     ]
   },
-  "timeline": [
-    {
-      "id": 1,
-      "date": "January 2024",
-      "event": "Entered the MTC in Provo, Utah",
-      "status": "done"
-    },
-    {
-      "id": 2,
-      "date": "March 2024",
-      "event": "Arrived in Idaho — First area: Rexburg",
-      "status": "done"
-    },
-    {
-      "id": 3,
-      "date": "September 2024",
-      "event": "Transferred to Pocatello",
-      "status": "done"
-    },
-    {
-      "id": 4,
-      "date": "January 2025",
-      "event": "Transferred to Idaho Falls West",
-      "status": "current"
-    },
-    {
-      "id": 5,
-      "date": "July 2025",
-      "event": "18-month mark 🎉",
-      "status": "future"
-    },
-    {
-      "id": 6,
-      "date": "January 2026",
-      "event": "Return Home — Mission Complete!",
-      "status": "future"
-    }
-  ],
-  "posts": [
-    {
-      "id": 47,
-      "week": 47,
-      "date": "March 24, 2025",
-      "title": "A Family That Changed Everything",
-      "location": "Idaho Falls, ID – West Area",
-      "body": "Dear family and friends,\n\nThis has been one of the most spiritual weeks of my entire mission. We've been teaching the Sorenson family for almost three months now, and this week something shifted. We were in their living room teaching about the Plan of Salvation, and you could feel the Spirit so strongly. The dad, who had been the most skeptical, started asking questions I've never heard an investigator ask. His heart is opening.\n\nWe also had a fantastic ward mission council meeting where we coordinated three member-present lessons. Members make ALL the difference — investigators trust them in a way they can't quite trust us yet as missionaries.\n\nThe weather has finally warmed up here. We biked 18 miles this week! My legs are thanking me... kind of. 😄 I love you all and feel your prayers every single day.\n\n– Elder Gledhill",
-      "scripture": "And the Spirit shall be given unto you by the prayer of faith.",
-      "scriptureRef": "D&C 42:14",
-      "tags": [
-        "Teaching",
-        "Investigators",
-        "Ward Mission"
-      ]
-    },
-    {
-      "id": 46,
-      "week": 46,
-      "date": "March 17, 2025",
-      "title": "Transfer Calls — I'm Staying!",
-      "location": "Idaho Falls, ID – West Area",
-      "body": "Dear family,\n\nTransfer calls came in on Saturday night and — I'm staying in Idaho Falls West! I honestly felt relief more than anything. We have so many promising investigators right now that I would have hated to leave. Elder Christensen is also staying, which means we get another full transfer together. He's one of the best companions I've had.\n\nSt. Patrick's Day was fun — half the ward showed up to church in green. One of our investigators, Sister Davis, attended sacrament meeting for the first time. She told us afterward she felt a peace she couldn't explain. Moments like that are why I'm here.\n\nThank you for all the letters this week — they seriously mean the world to me!\n\nLove, Elder Gledhill",
-      "scripture": "I can do all things through Christ which strengtheneth me.",
-      "scriptureRef": "Philippians 4:13",
-      "tags": [
-        "Transfers",
-        "Investigators",
-        "Zone"
-      ]
-    },
-    {
-      "id": 45,
-      "week": 45,
-      "date": "March 10, 2025",
-      "title": "A Baptism I'll Never Forget",
-      "location": "Idaho Falls, ID – West Area",
-      "body": "Dear family,\n\nWe got to attend the baptism of Marcus Thompson this week — someone Elder Petersen and I started teaching back in September. I didn't think I'd ever get to see it, and then there I was, standing at the font with tears in my eyes.\n\nMarcus stood up and bore his testimony right after and said he'd been searching for peace his whole life and finally found it. I could barely hold it together. The gospel changes lives — I know that more firmly every single week.\n\nWe also had our zone conference with President and Sister Harmon. He challenged each of us to pick a Christlike attribute to focus on. I chose patience.\n\nWith love, Elder Gledhill",
-      "scripture": "…how great shall be your joy with him in the kingdom of my Father!",
-      "scriptureRef": "D&C 18:15",
-      "tags": [
-        "Baptism",
-        "Zone Conference",
-        "Spiritual"
-      ]
-    },
-    {
-      "id": 44,
-      "week": 44,
-      "date": "March 3, 2025",
-      "title": "Snow, Service, and the Spirit",
-      "location": "Idaho Falls, ID – West Area",
-      "body": "Dear family,\n\nIdaho in March — sometimes it's 50 degrees, sometimes you get 8 inches of snow overnight. This week was the latter. We spent Monday shoveling driveways for elderly members in our ward, and every single house we finished led to a conversation about the gospel. Service really does open doors that knocking never could.\n\nWe had a powerful companionship study this week about the attributes of Christ. Elder Christensen and I have started role-playing lessons in the morning and it's made a huge difference in how confidently I teach.\n\nKeep the letters coming — they are fuel for the soul.\n\n— Elder Gledhill",
-      "scripture": "By their fruits ye shall know them.",
-      "scriptureRef": "Matthew 7:20",
-      "tags": [
-        "Service",
-        "Idaho Winter",
-        "Companionship"
-      ]
-    }
-  ],
+  "timeline": [],
+  "posts": [],
   "photos": [
     {
       "id": 1,
