@@ -156,6 +156,8 @@ export function App() {
 
   const protectedUpdates = content.updates.filter((u) => u.visibility === 'approved');
   const publicUpdates = content.updates.filter((u) => u.visibility === 'public');
+  const publicPhotos = content.photos.filter((p) => p.visibility === 'public');
+  const approvedPhotos = content.photos.filter((p) => p.visibility === 'approved');
 
   return (
     <div className="page">
@@ -206,6 +208,52 @@ export function App() {
                   <p>{u.body}</p>
                 </article>
               ))}
+          </section>
+
+          <section className="card">
+            <h2>Current Area</h2>
+            <p><strong>{content.map.currentArea || 'Not set'}</strong></p>
+            <p>Boundary points: {content.map.boundary.length}</p>
+            {content.map.boundary.length > 0 && (
+              <div className="item">
+                <small>
+                  {content.map.boundary
+                    .slice(0, 4)
+                    .map((point) => `${point[0].toFixed(5)}, ${point[1].toFixed(5)}`)
+                    .join(' • ')}
+                  {content.map.boundary.length > 4 ? ' • ...' : ''}
+                </small>
+              </div>
+            )}
+          </section>
+
+          <section className="card">
+            <h2>Public Photos</h2>
+            {publicPhotos.length === 0 && <p>No public photos yet.</p>}
+            <div className="photoGrid">
+              {publicPhotos.map((photo) => (
+                <article key={photo.id} className="item photoCard">
+                  <img src={photo.url} alt={photo.title} loading="lazy" />
+                  <p>{photo.title}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="card">
+            <h2>Approved-Only Photos</h2>
+            {!isApproved && content.settings.requireApproval && <p>Login with an approved account to view protected photos.</p>}
+            {isApproved && approvedPhotos.length === 0 && <p>No approved-only photos yet.</p>}
+            {isApproved && (
+              <div className="photoGrid">
+                {approvedPhotos.map((photo) => (
+                  <article key={photo.id} className="item photoCard">
+                    <img src={photo.url} alt={photo.title} loading="lazy" />
+                    <p>{photo.title}</p>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         </main>
       )}
@@ -284,10 +332,65 @@ function AdminPanel({
   onUpdateContent: (next: MissionContent) => void;
 }) {
   const [editorValue, setEditorValue] = useState(JSON.stringify(content, null, 2));
+  const [jsonMessage, setJsonMessage] = useState('');
 
   useEffect(() => {
     setEditorValue(JSON.stringify(content, null, 2));
   }, [content]);
+
+  const boundaryText = content.map.boundary.map((point) => `${point[0]},${point[1]}`).join('\n');
+
+  const updateMap = (next: { currentArea: string; boundaryText: string }) => {
+    const parsedBoundary = next.boundaryText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [latRaw, lngRaw] = line.split(',').map((value) => value.trim());
+        const lat = Number(latRaw);
+        const lng = Number(lngRaw);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          throw new Error(`Invalid boundary point: ${line}. Use format lat,lng`);
+        }
+        return [lat, lng] as [number, number];
+      });
+
+    onUpdateContent({
+      ...content,
+      map: {
+        currentArea: next.currentArea.trim(),
+        boundary: parsedBoundary
+      }
+    });
+  };
+
+  const addPhoto = (input: { title: string; url: string; visibility: 'public' | 'approved' }) => {
+    const nextPhoto = {
+      id: `p-${crypto.randomUUID()}`,
+      title: input.title.trim(),
+      url: input.url.trim(),
+      visibility: input.visibility
+    };
+
+    onUpdateContent({
+      ...content,
+      photos: [...content.photos, nextPhoto]
+    });
+  };
+
+  const removePhoto = (id: string) => {
+    onUpdateContent({
+      ...content,
+      photos: content.photos.filter((photo) => photo.id !== id)
+    });
+  };
+
+  const setPhotoVisibility = (id: string, visibility: 'public' | 'approved') => {
+    onUpdateContent({
+      ...content,
+      photos: content.photos.map((photo) => (photo.id === id ? { ...photo, visibility } : photo))
+    });
+  };
 
   return (
     <main className="grid">
@@ -309,14 +412,35 @@ function AdminPanel({
       </section>
 
       <section className="card">
+        <h2>Map editor</h2>
+        <MapEditor currentArea={content.map.currentArea} boundaryText={boundaryText} onSave={updateMap} />
+      </section>
+
+      <section className="card">
+        <h2>Photo manager</h2>
+        <PhotoEditor
+          photos={content.photos}
+          onAddPhoto={addPhoto}
+          onRemovePhoto={removePhoto}
+          onSetVisibility={setPhotoVisibility}
+        />
+      </section>
+
+      <section className="card">
         <h2>Full site JSON editor</h2>
         <p>Every detail of the webapp is editable here. Update JSON then save.</p>
+        {jsonMessage && <p className="message">{jsonMessage}</p>}
         <textarea value={editorValue} onChange={(e) => setEditorValue(e.target.value)} rows={24} />
         <div className="actions">
           <button
             onClick={() => {
-              const parsed = JSON.parse(editorValue) as MissionContent;
-              onUpdateContent(parsed);
+              try {
+                const parsed = JSON.parse(editorValue) as MissionContent;
+                onUpdateContent(parsed);
+                setJsonMessage('JSON saved successfully.');
+              } catch (error) {
+                setJsonMessage(error instanceof Error ? error.message : 'Invalid JSON.');
+              }
             }}
           >
             Save content
@@ -324,5 +448,112 @@ function AdminPanel({
         </div>
       </section>
     </main>
+  );
+}
+
+function MapEditor({
+  currentArea,
+  boundaryText,
+  onSave
+}: {
+  currentArea: string;
+  boundaryText: string;
+  onSave: (next: { currentArea: string; boundaryText: string }) => void;
+}) {
+  const [area, setArea] = useState(currentArea);
+  const [points, setPoints] = useState(boundaryText);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    setArea(currentArea);
+    setPoints(boundaryText);
+  }, [boundaryText, currentArea]);
+
+  return (
+    <>
+      {message && <p className="message">{message}</p>}
+      <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Current area" />
+      <textarea
+        value={points}
+        onChange={(e) => setPoints(e.target.value)}
+        rows={8}
+        placeholder="One point per line in the format: lat,lng"
+      />
+      <div className="actions">
+        <button
+          onClick={() => {
+            try {
+              onSave({ currentArea: area, boundaryText: points });
+              setMessage('Map updated.');
+            } catch (error) {
+              setMessage(error instanceof Error ? error.message : 'Failed to update map.');
+            }
+          }}
+        >
+          Save map
+        </button>
+      </div>
+    </>
+  );
+}
+
+function PhotoEditor({
+  photos,
+  onAddPhoto,
+  onRemovePhoto,
+  onSetVisibility
+}: {
+  photos: MissionContent['photos'];
+  onAddPhoto: (input: { title: string; url: string; visibility: 'public' | 'approved' }) => void;
+  onRemovePhoto: (id: string) => void;
+  onSetVisibility: (id: string, visibility: 'public' | 'approved') => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [visibility, setVisibility] = useState<'public' | 'approved'>('public');
+
+  return (
+    <>
+      <input placeholder="Photo title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <input placeholder="Photo URL" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <select value={visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'approved')}>
+        <option value="public">Public</option>
+        <option value="approved">Approved only</option>
+      </select>
+      <div className="actions">
+        <button
+          onClick={() => {
+            if (!title.trim() || !url.trim()) {
+              return;
+            }
+            onAddPhoto({ title, url, visibility });
+            setTitle('');
+            setUrl('');
+            setVisibility('public');
+          }}
+        >
+          Add photo
+        </button>
+      </div>
+
+      <div className="photoGrid">
+        {photos.map((photo) => (
+          <article key={photo.id} className="item photoCard">
+            <img src={photo.url} alt={photo.title} loading="lazy" />
+            <p>{photo.title}</p>
+            <div className="actions">
+              <button
+                onClick={() =>
+                  onSetVisibility(photo.id, photo.visibility === 'public' ? 'approved' : 'public')
+                }
+              >
+                Set {photo.visibility === 'public' ? 'approved' : 'public'}
+              </button>
+              <button onClick={() => onRemovePhoto(photo.id)}>Remove</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }
