@@ -784,7 +784,10 @@ function AdminPanel({
   const [copyMessage, setCopyMessage] = useState('');
   const [userFilter, setUserFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'suspended' | 'locked'>('all');
   const [userSearch, setUserSearch] = useState('');
+  const [userSort, setUserSort] = useState<'newest' | 'oldest' | 'name' | 'status' | 'lockout'>('newest');
+  const [auditFilter, setAuditFilter] = useState<'all' | 'auth' | 'user' | 'content' | 'audit'>('all');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [collapsedUserIds, setCollapsedUserIds] = useState<string[]>([]);
   const [tempSecret, setTempSecret] = useState<{
     email: string;
     value: string;
@@ -811,6 +814,7 @@ function AdminPanel({
   useEffect(() => {
     const knownIds = new Set(users.map((u) => u.id));
     setSelectedUserIds((prev) => prev.filter((id) => knownIds.has(id)));
+    setCollapsedUserIds((prev) => prev.filter((id) => knownIds.has(id)));
   }, [users]);
 
   const boundaryText = content.map.boundary.map((point) => `${point[0]},${point[1]}`).join('\n');
@@ -957,6 +961,34 @@ function AdminPanel({
     return statusMatch && searchMatch;
   });
 
+  const statusOrder: Record<'pending' | 'approved' | 'rejected' | 'suspended', number> = {
+    pending: 0,
+    approved: 1,
+    suspended: 2,
+    rejected: 3
+  };
+
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    const aRequested = Date.parse(a.requestedAt || '0');
+    const bRequested = Date.parse(b.requestedAt || '0');
+    const aLock = a.lockoutUntil ? Date.parse(a.lockoutUntil) : 0;
+    const bLock = b.lockoutUntil ? Date.parse(b.lockoutUntil) : 0;
+
+    switch (userSort) {
+      case 'oldest':
+        return aRequested - bRequested;
+      case 'name':
+        return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      case 'status':
+        return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder] || `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      case 'lockout':
+        return (bLock - aLock) || `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      case 'newest':
+      default:
+        return bRequested - aRequested;
+    }
+  });
+
   const lockoutsActive = users.filter((u) => (u.lockoutUntil ? Date.parse(u.lockoutUntil) > Date.now() : false)).length;
   const pendingUsers = users.filter((u) => u.status === 'pending').length;
   const approvedUsers = users.filter((u) => u.status === 'approved').length;
@@ -966,7 +998,6 @@ function AdminPanel({
   const publicPhotoCount = content.photos.filter((p) => p.visibility === 'public').length;
   const protectedPhotoCount = content.photos.filter((p) => p.visibility === 'approved').length;
   const auditEvents24h = auditLog.filter((e) => Date.now() - Date.parse(e.timestamp) <= 24 * 60 * 60 * 1000).length;
-  const recentActions = auditLog.slice(0, 8);
   const latestAudit = auditLog[0] ?? null;
 
   const getActionChipClass = (action: string) => {
@@ -981,8 +1012,32 @@ function AdminPanel({
 
   const formatActionLabel = (action: string) => action.replace(/_/g, ' ');
 
+  const getAuditCategory = (action: string): 'auth' | 'user' | 'content' | 'audit' | 'other' => {
+    if (action.startsWith('login_') || action.includes('lockout')) return 'auth';
+    if (action.startsWith('user_') || action.includes('password')) return 'user';
+    if (action.includes('audit')) return 'audit';
+    if (action.includes('photo') || action.includes('update') || action.includes('map') || action.includes('profile') || action.includes('site') || action.includes('settings') || action.includes('json')) return 'content';
+    return 'other';
+  };
+
+  const filteredAuditLog = auditLog.filter((entry) => {
+    if (auditFilter === 'all') return true;
+    return getAuditCategory(entry.action) === auditFilter;
+  });
+
+  const recentActionsFiltered = filteredAuditLog.slice(0, 8);
+
+  const auditCounts = {
+    all: auditLog.length,
+    auth: auditLog.filter((e) => getAuditCategory(e.action) === 'auth').length,
+    user: auditLog.filter((e) => getAuditCategory(e.action) === 'user').length,
+    content: auditLog.filter((e) => getAuditCategory(e.action) === 'content').length,
+    audit: auditLog.filter((e) => getAuditCategory(e.action) === 'audit').length
+  };
+
   const visibleUserIds = filteredUsers.map((u) => u.id);
   const allVisibleSelected = visibleUserIds.length > 0 && visibleUserIds.every((id) => selectedUserIds.includes(id));
+  const allVisibleCollapsed = visibleUserIds.length > 0 && visibleUserIds.every((id) => collapsedUserIds.includes(id));
 
   const toggleUserSelected = (id: string) => {
     setSelectedUserIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -995,6 +1050,19 @@ function AdminPanel({
     }
 
     setSelectedUserIds((prev) => [...new Set([...prev, ...visibleUserIds])]);
+  };
+
+  const toggleUserCollapsed = (id: string) => {
+    setCollapsedUserIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const toggleCollapseVisible = () => {
+    if (allVisibleCollapsed) {
+      setCollapsedUserIds((prev) => prev.filter((id) => !visibleUserIds.includes(id)));
+      return;
+    }
+
+    setCollapsedUserIds((prev) => [...new Set([...prev, ...visibleUserIds])]);
   };
 
   const applyBulkStatus = (status: 'approved' | 'rejected' | 'suspended') => {
@@ -1038,8 +1106,15 @@ function AdminPanel({
 
       <section className="card">
         <h2>Recent actions</h2>
-        {recentActions.length === 0 && <p>No recent actions yet.</p>}
-        {recentActions.map((entry) => (
+        <div className="actions">
+          <button className={auditFilter === 'all' ? 'tabActive' : ''} onClick={() => setAuditFilter('all')} aria-label="Show all audit actions">All ({auditCounts.all})</button>
+          <button className={auditFilter === 'auth' ? 'tabActive' : ''} onClick={() => setAuditFilter('auth')} aria-label="Show auth audit actions">Auth ({auditCounts.auth})</button>
+          <button className={auditFilter === 'user' ? 'tabActive' : ''} onClick={() => setAuditFilter('user')} aria-label="Show user audit actions">User ({auditCounts.user})</button>
+          <button className={auditFilter === 'content' ? 'tabActive' : ''} onClick={() => setAuditFilter('content')} aria-label="Show content audit actions">Content ({auditCounts.content})</button>
+          <button className={auditFilter === 'audit' ? 'tabActive' : ''} onClick={() => setAuditFilter('audit')} aria-label="Show audit maintenance actions">Audit ({auditCounts.audit})</button>
+        </div>
+        {recentActionsFiltered.length === 0 && <p>No recent actions yet.</p>}
+        {recentActionsFiltered.map((entry) => (
           <article key={entry.id} className="item">
             <p><span className={getActionChipClass(entry.action)}>{formatActionLabel(entry.action)}</span></p>
             <p>{entry.details}</p>
@@ -1065,11 +1140,21 @@ function AdminPanel({
             value={userSearch}
             onChange={(e) => setUserSearch(e.target.value)}
           />
+          <select aria-label="Sort approval queue" value={userSort} onChange={(e) => setUserSort(e.target.value as 'newest' | 'oldest' | 'name' | 'status' | 'lockout')}>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name">Name A–Z</option>
+            <option value="status">Status</option>
+            <option value="lockout">Lockout first</option>
+          </select>
         </div>
-        <small className="hintInfo">Showing {filteredUsers.length} of {users.length} users • Selected: {selectedUserIds.length}</small>
+        <small className="hintInfo">Showing {sortedUsers.length} of {users.length} users • Selected: {selectedUserIds.length}</small>
         <div className="actions">
           <button aria-label={allVisibleSelected ? 'Deselect all visible users' : 'Select all visible users'} onClick={toggleSelectVisible}>
             {allVisibleSelected ? 'Deselect visible' : 'Select visible'}
+          </button>
+          <button aria-label={allVisibleCollapsed ? 'Expand all visible users' : 'Collapse all visible users'} onClick={toggleCollapseVisible}>
+            {allVisibleCollapsed ? 'Expand visible' : 'Collapse visible'}
           </button>
           <button aria-label="Bulk approve selected users" disabled={selectedUserIds.length === 0} onClick={() => applyBulkStatus('approved')}>
             Bulk approve
@@ -1134,13 +1219,19 @@ function AdminPanel({
         )}
         {copyMessage && <p className="message">{copyMessage}</p>}
         {users.length === 0 && <p>No users yet.</p>}
-        {users.length > 0 && filteredUsers.length === 0 && <p>No users match current filters.</p>}
-        {filteredUsers.map((u) => {
+        {users.length > 0 && sortedUsers.length === 0 && <p>No users match current filters.</p>}
+        {sortedUsers.map((u) => {
           const lockoutUntilMs = u.lockoutUntil ? Date.parse(u.lockoutUntil) : 0;
           const isLocked = lockoutUntilMs > Date.now();
+          const isCollapsed = collapsedUserIds.includes(u.id);
 
           return (
             <article key={u.id} className="item">
+              <div className="actions">
+                <button aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} card for ${u.email}`} onClick={() => toggleUserCollapsed(u.id)}>
+                  {isCollapsed ? 'Expand' : 'Collapse'} card
+                </button>
+              </div>
               <label className="hintInfo">
                 <input
                   type="checkbox"
@@ -1152,6 +1243,9 @@ function AdminPanel({
               </label>
               <h3>{u.firstName} {u.lastName}</h3>
               <p>{u.email}</p>
+              {isCollapsed && <small className="hintInfo">Card collapsed. Expand to view actions.</small>}
+              {!isCollapsed && (
+                <>
               <p>Status: <strong>{u.status}</strong></p>
               <p>Failed attempts: <strong>{u.failedLoginAttempts ?? 0}</strong></p>
               <p>Lockout: <strong>{isLocked ? `Until ${new Date(lockoutUntilMs).toLocaleTimeString()}` : 'Not locked'}</strong></p>
@@ -1179,6 +1273,8 @@ function AdminPanel({
                 </button>
                 <button aria-label={`Clear lockout for ${u.email}`} onClick={() => onClearLockout(u.id)}>Clear lockout</button>
               </div>
+                </>
+              )}
             </article>
           );
         })}
@@ -1281,8 +1377,8 @@ function AdminPanel({
             Clear audit log
           </button>
         </div>
-        {auditLog.length === 0 && <p>No audit events yet.</p>}
-        {auditLog.slice(0, 30).map((entry) => (
+        {filteredAuditLog.length === 0 && <p>No audit events for current filter.</p>}
+        {filteredAuditLog.slice(0, 30).map((entry) => (
           <article key={entry.id} className="item">
             <p><span className={getActionChipClass(entry.action)}>{formatActionLabel(entry.action)}</span></p>
             <p>{entry.details}</p>
