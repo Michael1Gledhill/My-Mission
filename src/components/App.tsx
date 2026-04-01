@@ -56,6 +56,13 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
 const INACTIVITY_WARNING_MS = 60 * 1000;
+const DEFAULT_BOOTSTRAP_ADMIN_EMAIL = 'admin@example.com';
+const DEFAULT_BOOTSTRAP_ADMIN_PASSWORD = 'Admin@12345!';
+
+interface BootstrapAdminCredentials {
+  email: string;
+  password: string;
+}
 
 function generateTemporaryPassword(length = 16): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
@@ -92,24 +99,67 @@ export function App() {
   const [message, setMessage] = useState('');
   const [inactivitySecondsLeft, setInactivitySecondsLeft] = useState<number | null>(null);
   const [toasts, setToasts] = useState<AppToast[]>([]);
+  const [bootstrapAdmin, setBootstrapAdmin] = useState<BootstrapAdminCredentials | null>(null);
 
   useEffect(() => {
     const boot = async () => {
       const localContent = loadContent();
+      let activeContent = DEFAULT_CONTENT;
       if (localContent) {
         setContent(localContent);
+        activeContent = localContent;
       } else {
         try {
           const res = await fetch('./data/content.json');
           if (res.ok) {
             const json = (await res.json()) as MissionContent;
             setContent(json);
+            activeContent = json;
           }
         } catch {
           // fallback to default
         }
       }
-      setUsers(loadUsers());
+
+      const loadedUsers = loadUsers();
+      if (loadedUsers.length === 0) {
+        const adminEmail = normalizeEmail(activeContent.settings.adminEmails[0] ?? DEFAULT_BOOTSTRAP_ADMIN_EMAIL);
+        const salt = generateSalt();
+        const passwordHash = await hashPassword(DEFAULT_BOOTSTRAP_ADMIN_PASSWORD, salt);
+        const nowIso = new Date().toISOString();
+
+        const adminUser: AppUser = {
+          id: crypto.randomUUID(),
+          firstName: 'Site',
+          lastName: 'Admin',
+          email: adminEmail,
+          passwordHash,
+          salt,
+          status: 'approved',
+          requestedAt: nowIso,
+          decidedAt: nowIso,
+          failedLoginAttempts: 0
+        };
+
+        setUsers([adminUser]);
+        setBootstrapAdmin({
+          email: adminEmail,
+          password: DEFAULT_BOOTSTRAP_ADMIN_PASSWORD
+        });
+        setMessage('Default admin account was created for first-time setup. Use the login details shown below.');
+        setAuditLog((prev) => [
+          {
+            id: `audit-${crypto.randomUUID()}`,
+            timestamp: nowIso,
+            actor: 'system',
+            action: 'admin_bootstrap_created',
+            details: `Created first-run admin account ${adminEmail}`
+          },
+          ...prev
+        ].slice(0, 200));
+      } else {
+        setUsers(loadedUsers);
+      }
     };
 
     void boot();
@@ -588,7 +638,7 @@ export function App() {
       )}
 
       {mode === 'register' && <RegisterForm onSubmit={register} />}
-      {mode === 'login' && <LoginForm onSubmit={login} />}
+      {mode === 'login' && <LoginForm onSubmit={login} bootstrapAdmin={bootstrapAdmin} />}
       {mode === 'changePassword' && currentUser && <ChangePasswordForm onSubmit={changePassword} />}
 
       {mode === 'admin' && isAdmin && (
@@ -652,25 +702,63 @@ function RegisterForm({ onSubmit }: { onSubmit: (input: { firstName: string; las
   );
 }
 
-function LoginForm({ onSubmit }: { onSubmit: (email: string, password: string) => Promise<void> }) {
+function LoginForm({
+  onSubmit,
+  bootstrapAdmin
+}: {
+  onSubmit: (email: string, password: string) => Promise<void>;
+  bootstrapAdmin: BootstrapAdminCredentials | null;
+}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   return (
     <main id="main-content" tabIndex={-1} className="card narrow">
       <h2>Login</h2>
+      {bootstrapAdmin && (
+        <div className="message">
+          <p><strong>Admin starter login</strong></p>
+          <p>Email: <code>{bootstrapAdmin.email}</code></p>
+          <p>Password: <code>{bootstrapAdmin.password}</code></p>
+          <small>Change this password immediately after your first login.</small>
+        </div>
+      )}
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          void onSubmit(email, password);
+          setIsSubmitting(true);
+          try {
+            await onSubmit(email.trim(), password);
+          } finally {
+            setIsSubmitting(false);
+          }
         }}
       >
-        <input required type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input required type="email" autoComplete="username" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         {email.length > 0 && !isEmailValid && <small className="hintError">Enter a valid email address.</small>}
-        <input required type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input
+          required
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="current-password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+        />
+        <div className="actions">
+          <button type="button" onClick={() => setShowPassword((prev) => !prev)}>
+            {showPassword ? 'Hide password' : 'Show password'}
+          </button>
+        </div>
+        {capsLockOn && <small className="hintInfo">Caps Lock is on.</small>}
         {password.length > 0 && password.length < 4 && <small className="hintInfo">Password looks too short.</small>}
-        <button type="submit" disabled={!isEmailValid || password.length === 0}>Sign in</button>
+        <button type="submit" disabled={!isEmailValid || password.length === 0 || isSubmitting}>
+          {isSubmitting ? 'Signing in…' : 'Sign in'}
+        </button>
       </form>
       <details className="securityHint">
         <summary>Forgot password?</summary>
