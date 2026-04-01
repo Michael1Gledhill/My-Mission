@@ -1,0 +1,42 @@
+name: Process Approval Data (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'encrypt-accounts or encrypt-pending'
+        required: true
+        default: 'encrypt-accounts'
+
+jobs:
+  encrypt:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install python deps
+        run: pip install -r requirements.txt
+
+      - name: Encrypt selected file
+        env:
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.operation }}" = "encrypt-accounts" ]; then
+            python scripts/encrypt.py --input data/accounts.plain.json --output data/accounts.enc.json
+          else
+            python scripts/encrypt.py --input data/pending_approvals.plain.json --output data/pending_approvals.enc.json
+          fi
+
+      - name: Commit encrypted output
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add data/*.enc.json
+          git commit -m "chore: rotate encrypted auth data" || exit 0
+          git push
