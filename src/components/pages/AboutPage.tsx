@@ -1,79 +1,64 @@
-import { MissionContent } from '../../types';
+import type { SiteData } from '../../types';
 
 interface AboutPageProps {
-  content: MissionContent;
+  data: SiteData;
 }
 
-export function AboutPage({ content }: AboutPageProps) {
+export function AboutPage({ data }: AboutPageProps) {
+  const m = data.missionary;
+
   return (
-    <main id="main-content" tabIndex={-1} className="wrap">
-      <div className="card" style={{ marginBottom: '32px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ fontSize: '80px', marginBottom: '16px' }}>👤</div>
-          <h2 className="card-title" style={{ marginBottom: '8px' }}>
-            {content.profile.firstName} {content.profile.lastName}
-          </h2>
-          <p style={{ fontSize: '1.1rem', color: 'var(--gold)', marginBottom: '16px' }}>
-            {content.site.missionName}
-          </p>
-          <p style={{ color: 'var(--muted)', maxWidth: '600px', margin: '0 auto' }}>
-            {content.profile.bio}
-          </p>
+    <main id="main-content" tabIndex={-1}>
+      <section className="profile-hero">
+        <div className="avatar">👤</div>
+        <div>
+          <div className="eyebrow">Servant of the Lord</div>
+          <div className="pi-name">Elder <em>{m.firstName}</em> {m.lastName}</div>
+          <div className="pi-sub">Serving a full-time mission for The Church of Jesus Christ of Latter-day Saints.</div>
+          <div className="chips">
+            <span className="chip-sm">{data.location.city}, {data.location.state}</span>
+            <span className="chip-sm">{new Date(m.startDate).getFullYear()} – {new Date(m.endDate).getFullYear()}</span>
+            <span className="chip-sm">LDS Missionary</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid">
+      <div className="wrap">
+        <div className="facts-row">
+          <div className="fact"><div className="fact-ico">🏠</div><div className="fact-v">{m.hometown}</div><div className="fact-l">Hometown</div></div>
+          <div className="fact"><div className="fact-ico">🎂</div><div className="fact-v">{m.age}</div><div className="fact-l">Age</div></div>
+          <div className="fact"><div className="fact-ico">🎓</div><div className="fact-v">{m.collegePlans}</div><div className="fact-l">College Plans</div></div>
+          <div className="fact"><div className="fact-ico">⛪</div><div className="fact-v">Lifelong</div><div className="fact-l">Member</div></div>
+        </div>
+
+        <div className="g2" style={{ marginBottom: 22 }}>
+          <div className="card">
+            <div className="card-title">My Story</div>
+            <div style={{ marginTop: 8 }}>{m.bio.split('\n').map((p, i) => <p key={i} style={{ marginBottom: 10 }}>{p}</p>)}</div>
+          </div>
+          <div className="card">
+            <div className="card-title">Mission Details</div>
+            <table className="info-tbl" style={{ marginTop: 10 }}>
+              <tbody>
+                <tr><td>Mission</td><td>{m.missionName}</td></tr>
+                <tr><td>Mission President</td><td>{m.missionPresident}</td></tr>
+                <tr><td>Start Date</td><td>{new Date(m.startDate).toLocaleDateString()}</td></tr>
+                <tr><td>End Date</td><td>{new Date(m.endDate).toLocaleDateString()}</td></tr>
+                <tr><td>Current Area</td><td>{data.location.areaDescription}</td></tr>
+                <tr><td>Current Companion</td><td>{m.currentCompanion}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="testimony">
+          <div className="test-title">My Testimony</div>
+          <div className="test-text">{m.testimony}</div>
+        </div>
+
         <div className="card">
-          <h3 style={{ marginBottom: '16px', color: 'var(--navy)' }}>About the Mission</h3>
-          <p style={{ marginBottom: '12px' }}>
-            <strong>Name:</strong> {content.site.missionName}
-          </p>
-          <p style={{ marginBottom: '12px' }}>
-            <strong>Service Period:</strong> January 2024 - January 2026
-          </p>
-          <p style={{ marginBottom: '12px' }}>
-            <strong>Current Area:</strong> {content.map.currentArea}
-          </p>
-          <p>
-            <strong>Missionary Name:</strong> {content.profile.firstName} {content.profile.lastName}
-          </p>
-        </div>
-
-        <div className="card">
-          <h3 style={{ marginBottom: '16px', color: 'var(--navy)' }}>Testimony</h3>
-          <blockquote className="testimonyQuote">
-            "{content.profile.testimony || 'No testimony added yet.'}"
-          </blockquote>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: '32px' }}>
-        <h3 style={{ marginBottom: '16px', color: 'var(--navy)' }}>Ways to Support</h3>
-        <div className="grid">
-          <div style={{ padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>✉️ Write a Letter</p>
-            <p style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
-              Send encouraging letters and cards to support {content.profile.firstName}'s mission journey.
-            </p>
-          </div>
-          <div style={{ padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>📱 Stay Connected</p>
-            <p style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
-              Check back regularly for updates, photos, and insights from the mission field.
-            </p>
-          </div>
-          <div style={{ padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>🙏 Prayers & Support</p>
-            <p style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
-              Your fasting, prayers, and support are deeply appreciated during this sacred service.
-            </p>
-          </div>
-          <div style={{ padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>📍 Get to Know the Area</p>
-            <p style={{ fontSize: '0.9rem', color: 'var(--muted)' }}>
-              Learn about {content.site.missionName} and the communities being served.
-            </p>
-          </div>
+          <div className="card-title" style={{ marginBottom: 8 }}>Hobbies & Interests</div>
+          <div className="interests">{m.hobbies.map((h) => <span key={h} className="interest">{h}</span>)}</div>
         </div>
       </div>
     </main>

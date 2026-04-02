@@ -1,115 +1,84 @@
 import { useState } from 'react';
-import { MissionContent } from '../../types';
+import type { SiteData } from '../../types';
 
 interface ContactPageProps {
-  content: MissionContent;
+  data: SiteData;
+  onMessageSubmit: (payload: { name: string; email: string; relation: string; message: string }) => void;
+  onSubscribe: (email: string, relation: string) => void;
 }
 
-export function ContactPage({ content }: ContactPageProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-    relation: 'Friend'
-  });
-  const [submitted, setSubmitted] = useState(false);
+export function ContactPage({ data, onMessageSubmit, onSubscribe }: ContactPageProps) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [relation, setRelation] = useState('Friend from home');
+  const [message, setMessage] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [subEmail, setSubEmail] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Contact form submitted:', formData);
-    setSubmitted(true);
-    setTimeout(() => {
-      setFormData({ name: '', email: '', message: '', relation: 'Friend' });
-      setSubmitted(false);
-    }, 5000);
-  };
+  const emailCopy = `To: ${data.missionary.firstName} ${data.missionary.lastName}\nFrom: ${firstName} ${lastName} (${email})\nRelation: ${relation}\n\n${message}`;
 
   return (
-    <main id="main-content" tabIndex={-1} className="wrap">
-      <div className="grid">
-        <div className="card">
-          <h2 className="card-title">Contact & Support</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="fg">
-              <label>Name *</label>
-              <input
-                required
-                type="text"
-                placeholder="Your name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="fg">
-              <label>Email *</label>
-              <input
-                required
-                type="email"
-                placeholder="your@email.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div className="fg">
-              <label>Relation to Missionary</label>
-              <select
-                value={formData.relation}
-                onChange={(e) => setFormData({ ...formData, relation: e.target.value })}
-              >
-                <option>Friend</option>
-                <option>Family</option>
-                <option>Ward Member</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div className="fg">
-              <label>Message *</label>
-              <textarea
-                required
-                placeholder="Write your message here..."
-                rows={5}
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              />
-            </div>
-            {submitted ? (
-              <div style={{ padding: '16px', backgroundColor: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '4px', color: '#155724' }}>
-                ✓ Message sent! Thank you for your support.
-              </div>
-            ) : (
-              <button type="submit" className="bn bgold">Send Message</button>
-            )}
-          </form>
+    <main id="main-content" tabIndex={-1}>
+      <section className="hero">
+        <div className="hero-in">
+          <div className="eyebrow">Reach Out</div>
+          <h1>Contact & <em>Letters</em></h1>
+          <p>Letters from home mean the world to missionaries. Send Elder Gledhill a message of support.</p>
         </div>
+      </section>
 
-        <div>
-          <div className="card" style={{ marginBottom: '24px' }}>
-            <h3 style={{ marginBottom: '16px', color: 'var(--navy)' }}>Contact Methods</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.5rem' }}>✉️</span>
-                <span>Send letters through the church mailing system</span>
-              </p>
-              <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.5rem' }}>📱</span>
-                <span>Contact family members for direct communication</span>
-              </p>
-              <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.5rem' }}>🙏</span>
-                <span>Include {content.profile.firstName} in your prayers</span>
-              </p>
-            </div>
-          </div>
-
+      <div className="wrap">
+        <div className="g2">
           <div className="card">
-            <h3 style={{ marginBottom: '16px', color: 'var(--navy)' }}>Mailing Address</h3>
-            <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
-              <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>{content.profile.firstName} {content.profile.lastName}</p>
-              <p style={{ margin: '0 0 8px 0' }}>{content.site.missionName}</p>
-              <p style={{ margin: '0' }}>Church of Jesus Christ of Latter-day Saints</p>
+            <div className="card-title">Send a Message</div>
+            <div className="fr">
+              <div className="fg"><label>First Name</label><input value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+              <div className="fg"><label>Last Name</label><input value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
+            </div>
+            <div className="fg"><label>Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div className="fg"><label>How do you know Elder Gledhill?</label><select value={relation} onChange={(e) => setRelation(e.target.value)}><option>Family member</option><option>Friend from home</option><option>Friend from school</option><option>Ward member</option><option>Found this site online</option><option>Other</option></select></div>
+            <div className="fg"><label>Your Message</label><textarea value={message} onChange={(e) => setMessage(e.target.value)} /></div>
+            <div className="actions">
+              <button className="btn bn" onClick={() => {
+                if (!firstName || !email || !message) return;
+                onMessageSubmit({ name: `${firstName} ${lastName}`.trim(), email, relation, message });
+                setSuccess(true);
+                setTimeout(() => setSuccess(false), 5000);
+                setFirstName('');
+                setLastName('');
+                setEmail('');
+                setMessage('');
+              }}>Send My Message</button>
+              <button className="btn bo" onClick={() => void navigator.clipboard.writeText(emailCopy)}>Copy as email text</button>
+            </div>
+            {success && <div className="success-msg" style={{ display: 'block' }}>Message sent! Elder Gledhill's family will forward it to him. Thank you!</div>}
+          </div>
+
+          <div>
+            <div className="card">
+              <div className="card-title" style={{ marginBottom: 12 }}>Other Ways to Connect</div>
+              <div className="cm"><div className="cm-ico">📧</div><div><div className="cm-t">Email (Mondays only)</div><div className="cm-d">Missionaries can receive and send emails on Preparation Day only.</div></div></div>
+              <div className="cm"><div className="cm-ico">📮</div><div><div className="cm-t">Physical Mail</div><div className="cm-d">Letters and cards to the mission home. Allow 1–2 weeks.</div></div></div>
+              <div className="cm"><div className="cm-ico">📞</div><div><div className="cm-t">Phone / Video Calls</div><div className="cm-d">Christmas and Mother's Day only.</div></div></div>
+              <div className="cm"><div className="cm-ico">📦</div><div><div className="cm-t">Care Packages</div><div className="cm-d">Coordinate with family first.</div></div></div>
+            </div>
+            <div className="addr">
+              <div className="addr-t">Mailing Address</div>
+              <div className="addr-body">Elder {data.missionary.firstName} {data.missionary.lastName}<br />Idaho Idaho Falls Mission<br />3350 Merlin Drive<br />Idaho Falls, ID 83404<br />United States</div>
+            </div>
+            <div className="sub-strip">
+              <h3>Get Weekly Updates</h3>
+              <p>Elder Gledhill's letter delivered to your inbox every Monday.</p>
+              <div className="sub-form">
+                <input type="email" value={subEmail} onChange={(e) => setSubEmail(e.target.value)} placeholder="your@email.com" />
+                <button onClick={() => { if (!subEmail) return; onSubscribe(subEmail, 'Website'); setSubEmail(''); }}>Subscribe</button>
+              </div>
             </div>
           </div>
         </div>
+
+        <div className="quote-bar">"And now, my beloved brethren, I know by this that unless a man shall endure to the end..."<span className="q-ref">2 Nephi 31:16</span></div>
       </div>
     </main>
   );

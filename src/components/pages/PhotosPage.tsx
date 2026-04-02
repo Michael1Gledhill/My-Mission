@@ -1,97 +1,82 @@
-import { MissionContent } from '../../types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { Photo, SiteData } from '../../types';
 
 interface PhotosPageProps {
-  content: MissionContent;
+  data: SiteData;
 }
 
-export function PhotosPage({ content }: PhotosPageProps) {
-  const publicPhotos = content.photos.filter((p) => p.visibility === 'public');
-  const [selectedPhoto, setSelectedPhoto] = useState<typeof publicPhotos[0] | null>(null);
+export function PhotosPage({ data }: PhotosPageProps) {
+  const albums = useMemo(() => Array.from(new Set(data.photos.map((p) => p.album))), [data.photos]);
+  const [filter, setFilter] = useState<string>('all');
+  const [selected, setSelected] = useState<Photo | null>(null);
+
+  const visiblePhotos = useMemo(
+    () => (filter === 'all' ? data.photos : data.photos.filter((p) => p.album === filter)),
+    [data.photos, filter]
+  );
+
+  const grouped = useMemo(() => {
+    return albums
+      .map((album) => ({ album, photos: visiblePhotos.filter((p) => p.album === album) }))
+      .filter((group) => group.photos.length > 0);
+  }, [albums, visiblePhotos]);
 
   return (
-    <main id="main-content" tabIndex={-1} className="wrap">
-      <div className="card">
-        <h2 className="card-title">Mission Photos</h2>
-        <p style={{ color: 'var(--muted)', marginBottom: '24px' }}>
-          View photos from {content.profile.firstName}'s mission
-        </p>
+    <main id="main-content" tabIndex={-1}>
+      <section className="hero">
+        <div className="hero-in">
+          <div className="eyebrow">Mission Memories</div>
+          <h1>Photo <em>Gallery</em></h1>
+          <p>Snapshots from Elder Gledhill's mission in Idaho — the people, places, and moments that make up two years of service.</p>
+        </div>
+      </section>
 
-        {publicPhotos.length === 0 ? (
-          <p style={{ color: 'var(--muted)', textAlign: 'center', padding: '40px' }}>
-            No photos available yet.
-          </p>
-        ) : (
-          <div className="photoGrid">
-            {publicPhotos.map((photo) => (
-              <article
-                key={photo.id}
-                className="photoCard"
-                title={photo.title}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setSelectedPhoto(photo)}
-              >
-                <div style={{ width: '100%', height: '200px', backgroundColor: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', overflow: 'hidden' }}>
-                  {photo.url.startsWith('http') ? (
-                    <img src={photo.url} alt={photo.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div className="wrap">
+        <div className="filter-bar">
+          <button className={`chip ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>All Photos</button>
+          {albums.map((album) => (
+            <button key={album} className={`chip ${filter === album ? 'on' : ''}`} onClick={() => setFilter(album)}>{album}</button>
+          ))}
+        </div>
+
+        {grouped.map((group) => (
+          <section key={group.album}>
+            <div className="album-hd">
+              <div className="album-title">{group.album}</div>
+              <div className="album-date">{group.photos.length} photos</div>
+              <div className="album-div" />
+            </div>
+            <div className="photo-grid">
+              {group.photos.map((p) => (
+                <div key={p.id} className={`ph ${p.span || ''}`} onClick={() => setSelected(p)}>
+                  {p.imageData ? (
+                    <img src={p.imageData} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <span style={{ fontSize: '4rem' }}>{photo.url}</span>
+                    <div className="ph-inner" style={{ background: p.bg }}>{p.emoji}</div>
                   )}
+                  <div className="ph-cap">
+                    <div className="ph-cap-t">{p.title}</div>
+                    <div className="ph-cap-d">{p.date}</div>
+                  </div>
                 </div>
-              </article>
-            ))}
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div className={`lb ${selected ? 'on' : ''}`} onClick={(e) => e.currentTarget === e.target && setSelected(null)}>
+        <button className="lb-close" onClick={() => setSelected(null)} aria-label="Close photo lightbox">✕</button>
+        {selected && (
+          <div className="lb-box">
+            <div className="lb-img" style={selected.imageData ? { backgroundImage: `url(${selected.imageData})` } : { background: selected.bg }}>{selected.imageData ? '' : selected.emoji}</div>
+            <div className="lb-info">
+              <div className="lb-title">{selected.title}</div>
+              <div className="lb-desc">{selected.desc} · {selected.date}</div>
+            </div>
           </div>
         )}
       </div>
-
-      {selectedPhoto && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '20px'
-          }}
-          onClick={() => setSelectedPhoto(null)}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5', minHeight: '400px' }}>
-              {selectedPhoto.url.startsWith('http') ? (
-                <img src={selectedPhoto.url} alt={selectedPhoto.title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-              ) : (
-                <span style={{ fontSize: '8rem' }}>{selectedPhoto.url}</span>
-              )}
-            </div>
-            <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
-              <h3 style={{ margin: '0 0 8px 0' }}>{selectedPhoto.title}</h3>
-              <button
-                onClick={() => setSelectedPhoto(null)}
-                style={{ padding: '8px 16px', backgroundColor: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

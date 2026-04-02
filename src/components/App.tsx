@@ -1,18 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import type { AppUser, AuditLogEntry, MissionContent } from '../types';
-import { generateSalt, hashPassword, normalizeEmail } from '../lib/auth';
-import {
-  loadAuditLog,
-  loadContent,
-  loadSession,
-  loadUsers,
-  saveAuditLog,
-  saveContent,
-  saveSession,
-  saveUsers
-} from '../lib/storage';
-import { getGitHubConfig, saveGitHubConfig, testGitHubConnection, pushDataToGitHub } from '../lib/github';
+import { DEFAULT_DATA } from '../data/defaultData';
+import type { GitHubConfig, Photo, SiteData } from '../types';
+import { loadAdminData, loadPassword, saveAdminData, savePassword } from '../lib/storage';
 import { HomePage } from './pages/HomePage';
 import { UpdatesPage } from './pages/UpdatesPage';
 import { PhotosPage } from './pages/PhotosPage';
@@ -20,349 +9,93 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { MapEditor } from './map/MapEditor';
 
-const DEFAULT_CONTENT: MissionContent = {
-  site: {
-    title: 'Mission Portal',
-    subtitle: 'Secure updates for approved family and friends',
-    missionName: 'Idaho Falls Mission'
-  },
-  profile: {
-    firstName: 'Michael',
-    lastName: 'Gledhill',
-    bio: 'Serving in the Idaho Falls Mission from 2024–2026.',
-    testimony: 'I know God lives and that He knows each of us personally. This work is transforming lives.'
-  },
-  updates: [
-    {
-      id: 'u-1',
-      title: 'Welcome to the New Portal',
-      date: '2026-04-01',
-      body: 'This secure platform allows me to share mission updates with family and friends. You can see photos, read my experiences, and stay connected.',
-      visibility: 'public'
-    }
-  ],
-  map: {
-    boundary: [[43.4917, -112.0339]],
-    currentArea: 'Idaho Falls West'
-  },
-  photos: [],
-  settings: {
-    adminEmails: ['admin@example.com'],
-    requireApproval: true,
-    showProgressBar: true,
-    showMap: true,
-    allowMessages: true,
-    allowSubscriptions: true,
-    photoGalleryVisible: true
-  },
-  scripture: {
-    text: 'And the Spirit shall be given unto you by the prayer of faith.',
-    reference: 'Doctrine & Covenants 42:14'
-  },
-  timeline: [
-    { id: 1, date: 'January 2024', event: 'Entered the MTC in Provo, Utah', status: 'done' },
-    { id: 2, date: 'March 2024', event: 'Arrived in Idaho — First area: Rexburg', status: 'done' },
-    { id: 3, date: 'January 2025', event: 'Transferred to Idaho Falls West', status: 'current' },
-    { id: 4, date: 'January 2026', event: 'Return Home — Mission Complete!', status: 'future' }
-  ],
-  messages: [],
-  subscribers: [],
-  stats: {
-    monthsServed: 14,
-    monthsTotal: 24,
-    overallProgress: 58,
-    areaProgress: 50,
-    weeklyGoalDiscussions: 8,
-    weeklyGoalTarget: 12,
-    areasServed: 3
+const STORAGE_GH_KEY = 'mission_gh';
+const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/michael1gledhill/My-Mission/main/data.json';
+
+type AdminPanelKey =
+  | 'dashboard'
+  | 'profile'
+  | 'progress'
+  | 'map'
+  | 'updates'
+  | 'photos'
+  | 'scripture'
+  | 'timeline'
+  | 'github'
+  | 'settings'
+  | 'messages'
+  | 'subscribers';
+
+async function loadFreshData(config?: GitHubConfig | null): Promise<SiteData | null> {
+  try {
+    const target = config?.user ? `https://raw.githubusercontent.com/${config.user}/${config.repo}/${config.branch}/data.json?t=${Date.now()}` : `${GITHUB_DATA_URL}?t=${Date.now()}`;
+    const res = await fetch(target, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    return (await res.json()) as SiteData;
+  } catch {
+    return null;
   }
-};
-
-type ViewMode = 'home' | 'login' | 'register' | 'admin' | 'changePassword';
-type ToastKind = 'success' | 'info';
-interface AppToast {
-  id: string;
-  message: string;
-  kind: ToastKind;
-}
-interface BootstrapAdminCredentials {
-  email: string;
-  password: string;
 }
 
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
-const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
-const INACTIVITY_WARNING_MS = 60 * 1000;
-const DEFAULT_BOOTSTRAP_ADMIN_EMAIL = 'admin@example.com';
-const DEFAULT_BOOTSTRAP_ADMIN_PASSWORD = 'Admin@12345!';
+async function pushToGitHub(config: GitHubConfig, data: SiteData, message: string): Promise<string> {
+  const headers = {
+    Authorization: `token ${config.token}`,
+    'Content-Type': 'application/json',
+    Accept: 'application/vnd.github.v3+json'
+  };
 
-function generateTemporaryPassword(length = 16): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => chars[byte % chars.length]).join('');
+  let sha: string | undefined;
+  const getRes = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/data.json?ref=${config.branch}`, { headers });
+  if (getRes.ok) {
+    const found = (await getRes.json()) as { sha?: string };
+    sha = found.sha;
+  }
+
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const body: Record<string, string> = { message, content, branch: config.branch };
+  if (sha) body.sha = sha;
+
+  const putRes = await fetch(`https://api.github.com/repos/${config.user}/${config.repo}/contents/data.json`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(body)
+  });
+
+  if (!putRes.ok) {
+    const err = (await putRes.json()) as { message?: string };
+    throw new Error(err.message || 'Unknown GitHub push error');
+  }
+
+  const out = (await putRes.json()) as { commit?: { sha?: string } };
+  return out.commit?.sha || 'unknown';
 }
 
-function evaluatePasswordStrength(password: string): {
-  score: number;
-  label: 'Very weak' | 'Weak' | 'Fair' | 'Strong' | 'Very strong';
-  feedback: string;
-} {
-  let score = 0;
-  if (password.length >= 10) score += 1;
-  if (password.length >= 14) score += 1;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
-  if (/\d/.test(password)) score += 1;
-  if (/[^A-Za-z0-9]/.test(password)) score += 1;
-
-  if (score <= 1) return { score, label: 'Very weak', feedback: 'Use at least 10+ chars with upper/lower, number, and symbol.' };
-  if (score === 2) return { score, label: 'Weak', feedback: 'Add more variety (upper/lower, number, symbol).' };
-  if (score === 3) return { score, label: 'Fair', feedback: 'Acceptable, but stronger is better.' };
-  if (score === 4) return { score, label: 'Strong', feedback: 'Good password strength.' };
-  return { score, label: 'Very strong', feedback: 'Excellent password strength.' };
-}
-
-function LoginForm({ onLogin, onSwitchToRegister }: any) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const isCapsOn = (e: React.KeyboardEvent) => e.getModifierState('CapsLock');
-
-  const [capsWarning, setCapsWarning] = useState(false);
-
-  return (
-    <main id="main-content" tabIndex={-1} className="wrap">
-      <div className="card narrow">
-        <h2 className="card-title">Sign In</h2>
-        <form onSubmit={(e) => { e.preventDefault(); void onLogin(email, password); }}>
-          <div className="fg">
-            <label>Email</label>
-            <input required type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="fg">
-            <label>Password</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                required
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => setCapsWarning(isCapsOn(e))}
-                onKeyUp={(e) => setCapsWarning(isCapsOn(e))}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--muted)',
-                  fontSize: '1rem'
-                }}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
-            </div>
-            {capsWarning && <small style={{ color: 'var(--red)' }}>⚠️ Caps Lock is on</small>}
-          </div>
-          <div className="actions">
-            <button type="submit" className="bn bfull">Sign In</button>
-          </div>
-          <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.9rem' }}>
-            Don't have an account? <button type="button" onClick={onSwitchToRegister} className="link-btn">Register</button>
-          </p>
-        </form>
-      </div>
-    </main>
-  );
-}
-
-function RegisterForm({ onRegister, onSwitchToLogin }: any) {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
-  const strength = evaluatePasswordStrength(formData.password);
-
-  return (
-    <main id="main-content" tabIndex={-1} className="wrap">
-      <div className="card narrow">
-        <h2 className="card-title">Create Account</h2>
-        <form onSubmit={(e) => { e.preventDefault(); void onRegister(formData); }}>
-          <div className="fg">
-            <label>First Name</label>
-            <input required type="text" placeholder="First name" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
-          </div>
-          <div className="fg">
-            <label>Last Name</label>
-            <input required type="text" placeholder="Last name" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
-          </div>
-          <div className="fg">
-            <label>Email</label>
-            <input required type="email" placeholder="you@example.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-          </div>
-          <div className="fg">
-            <label>Password</label>
-            <input required minLength={10} type="password" placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-          </div>
-          <div className="fg">
-            <label>Confirm Password</label>
-            <input required minLength={10} type="password" placeholder="••••••••" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} />
-          </div>
-          <div className="strengthWrap">
-            <div className="strengthBar">
-              <div className={`strengthFill strength-${Math.max(1, strength.score)}`} />
-            </div>
-            <p style={{ fontSize: '0.85rem', marginBottom: '4px' }}>Password strength: <strong>{strength.label}</strong></p>
-            <small>{strength.feedback}</small>
-          </div>
-          <div className="actions">
-            <button type="submit" className="bn bfull" disabled={formData.password.length < 10 || strength.score < 3}>Create Account</button>
-          </div>
-          <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.9rem' }}>
-            Already have an account? <button type="button" onClick={onSwitchToLogin} className="link-btn">Sign In</button>
-          </p>
-        </form>
-      </div>
-    </main>
-  );
-}
-
-function ChangePasswordForm({ onSubmit }: any) {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const strength = evaluatePasswordStrength(newPassword);
-  const matches = confirmPassword === newPassword;
-  const canSubmit = newPassword.length >= 10 && strength.score >= 3 && confirmPassword.length > 0;
-
-  return (
-    <main id="main-content" tabIndex={-1} className="wrap">
-      <div className="card narrow">
-        <h2 className="card-title">Change Password</h2>
-        <form onSubmit={(e) => { e.preventDefault(); void onSubmit({ currentPassword, newPassword, confirmPassword }); }}>
-          <div className="fg">
-            <label>Current Password</label>
-            <input required type="password" placeholder="Current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-          </div>
-          <div className="fg">
-            <label>New Password</label>
-            <input required minLength={10} type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          </div>
-          <div className="fg">
-            <label>Confirm New Password</label>
-            <input required minLength={10} type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-          </div>
-          <div className="strengthWrap">
-            <div className="strengthBar">
-              <div className={`strengthFill strength-${Math.max(1, strength.score)}`} />
-            </div>
-            <p style={{ fontSize: '0.85rem', marginBottom: '4px' }}>Password strength: <strong>{strength.label}</strong></p>
-            <small>{strength.feedback}</small>
-          </div>
-          <div className="actions">
-            <button type="submit" className="bn bfull" disabled={!canSubmit || !matches}>Update Password</button>
-          </div>
-        </form>
-      </div>
-    </main>
-  );
-}
-
-function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetPassword, onAudit, onToast }: any) {
-  type PanelMode =
-    | 'dashboard'
-    | 'profile'
-    | 'progress'
-    | 'map'
-    | 'updates'
-    | 'photos'
-    | 'scripture'
-    | 'timeline'
-    | 'github'
-    | 'settings'
-    | 'messages'
-    | 'subscribers';
-
-  const [panel, setPanel] = useState<PanelMode>('dashboard');
-  const [tempSecret, setTempSecret] = useState<{ email: string; value: string; expiresAt: number; revealed: boolean } | null>(null);
-  const [copyMessage, setCopyMessage] = useState('');
-  const [jsonEditor, setJsonEditor] = useState(JSON.stringify(content, null, 2));
-  const [boundaryInput, setBoundaryInput] = useState(JSON.stringify(content.map.boundary, null, 2));
-  const [ghStatus, setGhStatus] = useState<'unconfigured' | 'checking' | 'connected' | 'failed'>('unconfigured');
-  const [ghUsername, setGhUsername] = useState('');
-  const [ghRepo, setGhRepo] = useState('');
-  const [ghBranch, setGhBranch] = useState('main');
-  const [ghToken, setGhToken] = useState('');
-  const [isPushing, setIsPushing] = useState(false);
-  const [pushLog, setPushLog] = useState<string[]>([]);
-  const [adminPassword, setAdminPassword] = useState(localStorage.getItem('mission_pw') || 'mission2024');
-  const [currentPw, setCurrentPw] = useState('');
-  const [newPw, setNewPw] = useState('');
-  const [confirmPw, setConfirmPw] = useState('');
-  const [pendingUpload, setPendingUpload] = useState<Array<{ title: string; album: string; date: string; imageData: string; fileName: string }>>([]);
+function AdminView({ data, setData }: { data: SiteData; setData: (next: SiteData) => void }) {
+  const [panel, setPanel] = useState<AdminPanelKey>('dashboard');
+  const [pendingUpload, setPendingUpload] = useState<Array<{ fileName: string; imageData: string; title: string; album: string }>>([]);
   const [albumChoice, setAlbumChoice] = useState('March 2025');
   const [newAlbum, setNewAlbum] = useState('');
+  const [ghUser, setGhUser] = useState('');
+  const [ghRepo, setGhRepo] = useState('My-Mission');
+  const [ghBranch, setGhBranch] = useState('main');
+  const [ghToken, setGhToken] = useState('');
+  const [commitMessage, setCommitMessage] = useState(`Update mission data — ${new Date().toLocaleDateString()}`);
+  const [pushLog, setPushLog] = useState<string[]>([]);
+  const [isPushing, setIsPushing] = useState(false);
 
-  const contentSafe: MissionContent = {
-    ...content,
-    scripture: content.scripture ?? { text: '', reference: '' },
-    timeline: content.timeline ?? [],
-    messages: content.messages ?? [],
-    subscribers: content.subscribers ?? [],
-    stats: content.stats ?? {
-      monthsServed: 14,
-      monthsTotal: 24,
-      overallProgress: 58,
-      areaProgress: 50,
-      weeklyGoalDiscussions: 8,
-      weeklyGoalTarget: 12,
-      areasServed: 3
-    },
-    settings: {
-      ...content.settings,
-      showProgressBar: content.settings.showProgressBar ?? true,
-      showMap: content.settings.showMap ?? true,
-      allowMessages: content.settings.allowMessages ?? true,
-      allowSubscriptions: content.settings.allowSubscriptions ?? true,
-      photoGalleryVisible: content.settings.photoGalleryVisible ?? true
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_GH_KEY);
+      if (!stored) return;
+      const cfg = JSON.parse(stored) as GitHubConfig;
+      setGhUser(cfg.user);
+      setGhRepo(cfg.repo);
+      setGhBranch(cfg.branch);
+      setGhToken(cfg.token);
+    } catch {
+      // ignore
     }
-  };
-
-  const patch = (next: MissionContent) => {
-    onUpdateContent(next);
-    setJsonEditor(JSON.stringify(next, null, 2));
-  };
-
-  useEffect(() => {
-    const loadGhConfig = async () => {
-      const cfg = await getGitHubConfig();
-      if (cfg) {
-        setGhUsername(cfg.user);
-        setGhRepo(cfg.repo);
-        setGhBranch(cfg.branch);
-        setGhToken(cfg.token);
-        setGhStatus('checking');
-        const connected = await testGitHubConnection(cfg);
-        setGhStatus(connected ? 'connected' : 'failed');
-      }
-    };
-    void loadGhConfig();
   }, []);
-
-  useEffect(() => {
-    if (!tempSecret) return;
-    const timeoutMs = Math.max(0, tempSecret.expiresAt - Date.now());
-    const timer = window.setTimeout(() => {
-      setTempSecret(null);
-      setCopyMessage('Temporary password expired and was cleared.');
-    }, timeoutMs);
-    return () => window.clearTimeout(timer);
-  }, [tempSecret]);
 
   const compressImage = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -373,991 +106,471 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
           const MAX = 1200;
           let w = img.width;
           let h = img.height;
-          if (w > MAX) {
-            h = Math.round((h * MAX) / w);
-            w = MAX;
-          }
-          if (h > MAX) {
-            w = Math.round((w * MAX) / h);
-            h = MAX;
-          }
+          if (w > MAX) { h = Math.round((h * MAX) / w); w = MAX; }
+          if (h > MAX) { w = Math.round((w * MAX) / h); h = MAX; }
           const canvas = document.createElement('canvas');
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            reject(new Error('Canvas not supported'));
+            reject(new Error('Canvas context unavailable'));
             return;
           }
           ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', 0.75));
         };
-        img.onerror = () => reject(new Error('Invalid image file'));
+        img.onerror = () => reject(new Error('Failed to load selected image'));
         img.src = e.target?.result as string;
       };
-      reader.onerror = () => reject(new Error('Could not read image'));
+      reader.onerror = () => reject(new Error('Failed to read image file'));
       reader.readAsDataURL(file);
     });
   };
 
-  const handlePhotoFiles = async (fileList: FileList | File[]) => {
-    const files = Array.from(fileList);
-    if (files.length === 0) return;
-    const nextAlbum = albumChoice === '__new__' ? newAlbum.trim() || 'New Album' : albumChoice;
-    const queued: Array<{ title: string; album: string; date: string; imageData: string; fileName: string }> = [];
-    for (const file of files) {
+  const handleFiles = async (files: FileList | File[]) => {
+    const all = Array.from(files);
+    const selectedAlbum = albumChoice === '__new__' ? newAlbum.trim() || 'New Album' : albumChoice;
+    const nextItems: Array<{ fileName: string; imageData: string; title: string; album: string }> = [];
+    for (const file of all) {
       if (file.size > 3 * 1024 * 1024) {
-        onToast(`Warning: ${file.name} is > 3MB before compression.`, 'info');
+        setPushLog((prev) => [...prev, `⚠ ${file.name} is larger than 3MB before compression.`]);
       }
       try {
         const imageData = await compressImage(file);
-        queued.push({
-          title: file.name.replace(/\.[^.]+$/, ''),
-          album: nextAlbum,
-          date: nextAlbum,
-          imageData,
-          fileName: file.name
-        });
-      } catch {
-        onToast(`Could not process ${file.name}`, 'info');
+        nextItems.push({ fileName: file.name, imageData, title: file.name.replace(/\.[^.]+$/, ''), album: selectedAlbum });
+      } catch (err) {
+        setPushLog((prev) => [...prev, `✗ ${file.name}: ${(err as Error).message}`]);
       }
     }
-    setPendingUpload((prev) => [...prev, ...queued]);
+    setPendingUpload((prev) => [...prev, ...nextItems]);
   };
 
-  const pendingUsers = users.filter((u: AppUser) => u.status === 'pending');
-  const approvedUsers = users.filter((u: AppUser) => u.status === 'approved');
-  const albums = Array.from(new Set(contentSafe.photos.map((p) => p.album).filter(Boolean) as string[]));
+  const onDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
+    e.preventDefault();
+    void handleFiles(e.dataTransfer.files);
+  };
+
+  const addPendingPhotos = () => {
+    const mapped: Photo[] = pendingUpload.map((p, idx) => ({
+      id: Date.now() + idx,
+      emoji: '',
+      title: p.title,
+      desc: '',
+      album: p.album,
+      date: p.album,
+      bg: 'linear-gradient(135deg,#b8d4f0,#7aaad8)',
+      span: '',
+      imageData: p.imageData
+    }));
+    setData({ ...data, photos: [...mapped, ...data.photos].slice(0, 50), stats: { ...data.stats, subscribers: data.subscribers.length } });
+    setPendingUpload([]);
+  };
+
+  const movePhoto = (from: number, to: number) => {
+    if (to < 0 || to >= data.photos.length) return;
+    const next = [...data.photos];
+    const [picked] = next.splice(from, 1);
+    next.splice(to, 0, picked);
+    setData({ ...data, photos: next });
+  };
+
+  const panelLabel: Record<AdminPanelKey, string> = {
+    dashboard: 'Dashboard',
+    profile: 'Profile & Info',
+    progress: 'Mission Progress',
+    map: 'Mission Map',
+    updates: 'Weekly Updates',
+    photos: 'Photos',
+    scripture: 'Scripture',
+    timeline: 'Timeline',
+    github: 'GitHub / Publish',
+    settings: 'Settings',
+    messages: 'Messages',
+    subscribers: 'Subscribers'
+  };
 
   return (
-    <main id="main-content" tabIndex={-1} className="wrap">
-      <div className="card">
-        <h2 className="card-title">Admin Panel</h2>
-
-        <div className="actions" style={{ marginBottom: '16px' }}>
-          {[
-            ['dashboard', 'Dashboard'],
-            ['profile', 'Profile & Info'],
-            ['progress', 'Mission Progress'],
-            ['map', 'Mission Map'],
-            ['updates', 'Weekly Updates'],
-            ['photos', 'Photos'],
-            ['scripture', 'Scripture'],
-            ['timeline', 'Timeline'],
-            ['github', 'GitHub / Publish'],
-            ['settings', 'Settings'],
-            ['messages', 'Messages'],
-            ['subscribers', 'Subscribers']
-          ].map(([key, label]) => (
-            <button key={key} className={panel === key ? 'tabActive' : ''} onClick={() => setPanel(key as PanelMode)}>{label}</button>
-          ))}
+    <div className="adminLayout">
+      <aside className="adminSidebar">
+        {Object.keys(panelLabel).map((key) => (
+          <button key={key} className={panel === key ? 'tabActive' : ''} onClick={() => setPanel(key as AdminPanelKey)}>{panelLabel[key as AdminPanelKey]}</button>
+        ))}
+      </aside>
+      <section className="adminMain">
+        <div className="adminTopbar">
+          <h2>{panelLabel[panel]}</h2>
+          <button className="bn bgold" onClick={() => setPanel('github')}>Push to GitHub</button>
         </div>
 
-        {panel === 'dashboard' && (
-          <div>
-            <div className="stats">
-              <article className="item statCard"><strong>{contentSafe.updates.length}</strong><small>Updates</small></article>
-              <article className="item statCard"><strong>{contentSafe.stats?.overallProgress ?? 0}%</strong><small>Mission Progress</small></article>
-              <article className="item statCard"><strong>{contentSafe.subscribers?.length ?? 0}</strong><small>Subscribers</small></article>
-              <article className="item statCard"><strong>{contentSafe.photos.length}</strong><small>Photos</small></article>
-            </div>
-
-            <h3 style={{ marginBottom: '10px' }}>Approval Queue ({pendingUsers.length})</h3>
-            {pendingUsers.length === 0 && <p style={{ color: 'var(--muted)' }}>No pending users.</p>}
-            {pendingUsers.map((user: AppUser) => (
-              <div key={user.id} className="item">
-                <p><strong>{user.firstName} {user.lastName}</strong> — {user.email}</p>
-                <div className="actions">
-                  <button className="bgold" onClick={() => { onSetUserStatus(user.id, 'approved'); onAudit('user_approved', `Approved ${user.email}`); onToast('User approved'); }}>Approve</button>
-                  <button className="bred" onClick={() => { onSetUserStatus(user.id, 'rejected'); onAudit('user_rejected', `Rejected ${user.email}`); onToast('User rejected', 'info'); }}>Reject</button>
-                </div>
+        <div className="card" style={{ marginTop: 14 }}>
+          {panel === 'dashboard' && (
+            <>
+              <div className="stats">
+                <article className="statCard"><div className="sv">{data.posts.length}</div><div className="sl">Updates</div></article>
+                <article className="statCard"><div className="sv">{data.stats.overallProgress}%</div><div className="sl">Progress</div></article>
+                <article className="statCard"><div className="sv">{data.subscribers.length}</div><div className="sl">Subscribers</div></article>
+                <article className="statCard"><div className="sv">{data.photos.length}</div><div className="sl">Photos</div></article>
               </div>
-            ))}
+              <h3>Recent Messages</h3>
+              {data.messages.slice(0, 3).map((msg) => <div key={msg.id} className="item"><strong>{msg.name}</strong> — {msg.message}</div>)}
+            </>
+          )}
 
-            <h3 style={{ marginTop: '20px', marginBottom: '10px' }}>Approved Users ({approvedUsers.length})</h3>
-            {approvedUsers.map((user: AppUser) => (
-              <div key={user.id} className="item">
-                <p><strong>{user.firstName} {user.lastName}</strong> — {user.email}</p>
-                <div className="actions">
-                  <button onClick={() => { void onResetPassword(user.id).then((pwd: string) => { setTempSecret({ email: user.email, value: pwd, expiresAt: Date.now() + 60000, revealed: false }); setCopyMessage('Temporary password generated.'); }); }}>Reset Password</button>
-                  <button className="bred" onClick={() => onSetUserStatus(user.id, 'suspended')}>Suspend</button>
-                </div>
-              </div>
-            ))}
-
-            {tempSecret && (
-              <div className="message" style={{ marginTop: '16px', background: 'var(--gold-dim)', border: '1px solid #D4B46B', color: 'var(--navy)' }}>
-                <p><strong>Temporary password for {tempSecret.email}</strong></p>
-                <p className="mono" style={{ background: 'rgba(255,255,255,0.5)', padding: '8px', borderRadius: '4px', marginBottom: '8px', wordBreak: 'break-all' }}>
-                  {tempSecret.revealed ? tempSecret.value : '••••••••••••••••'}
-                </p>
-                <small>Expires in 60 seconds.</small>
-                <div className="actions" style={{ marginTop: '8px' }}>
-                  <button type="button" onClick={() => setTempSecret((prev) => (prev ? { ...prev, revealed: !prev.revealed } : prev))}>
-                    {tempSecret.revealed ? 'Hide' : 'Reveal'}
-                  </button>
-                  <button type="button" onClick={() => {
-                    if (!tempSecret.revealed) {
-                      setCopyMessage('Reveal password first.');
-                      return;
-                    }
-                    navigator.clipboard?.writeText(tempSecret.value).then(() => setCopyMessage('Copied!')).catch(() => setCopyMessage('Copy failed.'));
-                  }}>Copy</button>
-                </div>
-              </div>
-            )}
-            {copyMessage && <p className="message" style={{ marginTop: '8px' }}>{copyMessage}</p>}
-          </div>
-        )}
-
-        {panel === 'profile' && (
-          <div>
-            <div className="fr">
-              <div className="fg"><label>First Name</label><input value={contentSafe.profile.firstName} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, firstName: e.target.value } })} /></div>
-              <div className="fg"><label>Last Name</label><input value={contentSafe.profile.lastName} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, lastName: e.target.value } })} /></div>
-            </div>
-            <div className="fg"><label>Mission Name</label><input value={contentSafe.site.missionName} onChange={(e) => patch({ ...contentSafe, site: { ...contentSafe.site, missionName: e.target.value } })} /></div>
-            <div className="fg"><label>Current Area</label><input value={contentSafe.map.currentArea} onChange={(e) => patch({ ...contentSafe, map: { ...contentSafe.map, currentArea: e.target.value } })} /></div>
-            <div className="fg"><label>Bio</label><textarea value={contentSafe.profile.bio} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, bio: e.target.value } })} /></div>
-            <div className="fg"><label>Testimony</label><textarea value={contentSafe.profile.testimony} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, testimony: e.target.value } })} /></div>
-          </div>
-        )}
-
-        {panel === 'progress' && (
-          <div>
-            <div className="fr3">
-              <div className="fg"><label>Months Served</label><input type="number" value={contentSafe.stats?.monthsServed ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, monthsServed: Number(e.target.value) } })} /></div>
-              <div className="fg"><label>Total Months</label><input type="number" value={contentSafe.stats?.monthsTotal ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, monthsTotal: Number(e.target.value) } })} /></div>
-              <div className="fg"><label>Areas Served</label><input type="number" value={contentSafe.stats?.areasServed ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, areasServed: Number(e.target.value) } })} /></div>
-            </div>
-
-            <div className="fg"><label>Overall Mission Progress ({contentSafe.stats?.overallProgress ?? 0}%)</label><input type="range" min={0} max={100} value={contentSafe.stats?.overallProgress ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, overallProgress: Number(e.target.value) } })} /></div>
-            <div className="fg"><label>Current Area Progress ({contentSafe.stats?.areaProgress ?? 0}%)</label><input type="range" min={0} max={100} value={contentSafe.stats?.areaProgress ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, areaProgress: Number(e.target.value) } })} /></div>
-            <div className="fg"><label>Weekly Goal ({contentSafe.stats?.weeklyGoalDiscussions ?? 0}/{contentSafe.stats?.weeklyGoalTarget ?? 12})</label><input type="range" min={0} max={12} value={contentSafe.stats?.weeklyGoalDiscussions ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, weeklyGoalDiscussions: Number(e.target.value) } })} /></div>
-          </div>
-        )}
-
-        {panel === 'map' && (
-          <div>
-            <div className="fg"><label>Current Area</label><input value={contentSafe.map.currentArea} onChange={(e) => patch({ ...contentSafe, map: { ...contentSafe.map, currentArea: e.target.value } })} /></div>
-            <MapEditor
-              boundary={contentSafe.map.boundary}
-              currentArea={contentSafe.map.currentArea}
-              onBoundaryChange={(nextBoundary) => patch({ ...contentSafe, map: { ...contentSafe.map, boundary: nextBoundary } })}
-              onCurrentAreaChange={(nextArea) => patch({ ...contentSafe, map: { ...contentSafe.map, currentArea: nextArea } })}
-            />
-            <div className="fg" style={{ marginTop: '12px' }}><label>Mission Boundary JSON [[lat,lng],...]</label><textarea value={boundaryInput} onChange={(e) => setBoundaryInput(e.target.value)} /></div>
-            <div className="actions">
-              <button className="bn" onClick={() => {
-                try {
-                  const parsed = JSON.parse(boundaryInput);
-                  if (!Array.isArray(parsed)) throw new Error('Boundary must be an array');
-                  patch({ ...contentSafe, map: { ...contentSafe.map, boundary: parsed } });
-                  onToast('Mission boundary imported');
-                } catch (e) {
-                  onToast(`Boundary import failed: ${(e as Error).message}`, 'info');
-                }
-              }}>Import Boundary</button>
-              <button className="bred" onClick={() => { setBoundaryInput('[]'); patch({ ...contentSafe, map: { ...contentSafe.map, boundary: [] } }); }}>Clear Boundary</button>
-            </div>
-          </div>
-        )}
-
-        {panel === 'updates' && (
-          <div>
-            <button className="bn" onClick={() => {
-              const newUpdate = {
-                id: `u-${Date.now()}`,
-                week: contentSafe.updates.length + 1,
-                title: 'New Weekly Update',
-                date: new Date().toISOString().split('T')[0],
-                location: contentSafe.map.currentArea,
-                body: 'Dear family and friends,\n\nThis week was full of meaningful experiences.\n\nLove, Elder Gledhill',
-                scripture: contentSafe.scripture?.text,
-                scriptureRef: contentSafe.scripture?.reference,
-                tags: ['Teaching'],
-                visibility: 'public' as const
-              };
-              patch({ ...contentSafe, updates: [newUpdate, ...contentSafe.updates] });
-            }}>Publish Update</button>
-
-            {contentSafe.updates.map((update, idx) => (
-              <div key={update.id} className="item" style={{ marginTop: '12px' }}>
-                <div className="fg"><label>Title</label><input value={update.title} onChange={(e) => {
-                  const next = [...contentSafe.updates];
-                  next[idx] = { ...next[idx], title: e.target.value };
-                  patch({ ...contentSafe, updates: next });
-                }} /></div>
-                <div className="fr">
-                  <div className="fg"><label>Date</label><input type="date" value={update.date} onChange={(e) => {
-                    const next = [...contentSafe.updates];
-                    next[idx] = { ...next[idx], date: e.target.value };
-                    patch({ ...contentSafe, updates: next });
-                  }} /></div>
-                  <div className="fg"><label>Visibility</label><select value={update.visibility} onChange={(e) => {
-                    const next = [...contentSafe.updates];
-                    next[idx] = { ...next[idx], visibility: e.target.value as 'public' | 'approved' };
-                    patch({ ...contentSafe, updates: next });
-                  }}><option value="public">Public</option><option value="approved">Approved</option></select></div>
-                </div>
-                <div className="fg"><label>Body</label><textarea value={update.body} onChange={(e) => {
-                  const next = [...contentSafe.updates];
-                  next[idx] = { ...next[idx], body: e.target.value };
-                  patch({ ...contentSafe, updates: next });
-                }} /></div>
-                <button className="bred" onClick={() => patch({ ...contentSafe, updates: contentSafe.updates.filter((_, i) => i !== idx) })}>Delete</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {panel === 'photos' && (
-          <div>
-            <div className="item" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); void handlePhotoFiles(e.dataTransfer.files); }}>
-              <p style={{ marginBottom: '8px' }}><strong>Upload Photos</strong> (drag & drop or choose files)</p>
+          {panel === 'profile' && (
+            <>
               <div className="fr">
-                <div className="fg">
-                  <label>Album</label>
-                  <select value={albumChoice} onChange={(e) => setAlbumChoice(e.target.value)}>
-                    {albums.map((album) => <option key={album} value={album}>{album}</option>)}
-                    <option value="March 2025">March 2025</option>
-                    <option value="Early 2025">Early 2025</option>
-                    <option value="2024">2024</option>
-                    <option value="__new__">New Album…</option>
-                  </select>
-                </div>
-                {albumChoice === '__new__' && (
-                  <div className="fg">
-                    <label>New Album Name</label>
-                    <input value={newAlbum} onChange={(e) => setNewAlbum(e.target.value)} placeholder="April 2026" />
-                  </div>
-                )}
+                <div className="fg"><label>First Name</label><input value={data.missionary.firstName} onChange={(e) => setData({ ...data, missionary: { ...data.missionary, firstName: e.target.value } })} /></div>
+                <div className="fg"><label>Last Name</label><input value={data.missionary.lastName} onChange={(e) => setData({ ...data, missionary: { ...data.missionary, lastName: e.target.value } })} /></div>
               </div>
-              <input type="file" accept="image/*" multiple onChange={(e) => { if (e.target.files) void handlePhotoFiles(e.target.files); }} />
-            </div>
-
-            {pendingUpload.length > 0 && (
-              <div className="item" style={{ marginTop: '12px' }}>
-                <p><strong>Pending Upload ({pendingUpload.length})</strong></p>
-                <div className="photoGrid" style={{ marginTop: '12px' }}>
-                  {pendingUpload.map((photo, i) => (
-                    <article key={`${photo.fileName}-${i}`} className="photoCard">
-                      <img src={photo.imageData} alt={photo.title} />
-                    </article>
-                  ))}
-                </div>
-                <div className="actions">
-                  <button className="bgold" onClick={() => {
-                    const mapped = pendingUpload.map((p, idx) => ({
-                      id: `p-${Date.now()}-${idx}`,
-                      title: p.title,
-                      url: p.imageData,
-                      imageData: p.imageData,
-                      album: p.album,
-                      date: p.date,
-                      desc: '',
-                      emoji: '📸',
-                      bg: 'linear-gradient(135deg,#b8d4f0,#7aaad8)',
-                      span: '',
-                      visibility: 'public' as const
-                    }));
-                    patch({ ...contentSafe, photos: [...mapped, ...contentSafe.photos].slice(0, 50) });
-                    setPendingUpload([]);
-                    onToast('Photos added to gallery');
-                  }}>Add These Photos to Gallery</button>
-                  <button className="bred" onClick={() => setPendingUpload([])}>Clear Pending</button>
-                </div>
+              <div className="fr">
+                <div className="fg"><label>Hometown</label><input value={data.missionary.hometown} onChange={(e) => setData({ ...data, missionary: { ...data.missionary, hometown: e.target.value } })} /></div>
+                <div className="fg"><label>Age</label><input type="number" value={data.missionary.age} onChange={(e) => setData({ ...data, missionary: { ...data.missionary, age: Number(e.target.value) } })} /></div>
               </div>
-            )}
+              <div className="fg"><label>Bio</label><textarea value={data.missionary.bio} onChange={(e) => setData({ ...data, missionary: { ...data.missionary, bio: e.target.value } })} /></div>
+              <div className="fg"><label>Testimony</label><textarea value={data.missionary.testimony} onChange={(e) => setData({ ...data, missionary: { ...data.missionary, testimony: e.target.value } })} /></div>
+            </>
+          )}
 
-            <div className="photoGrid" style={{ marginTop: '12px' }}>
-              {contentSafe.photos.map((photo, idx) => (
-                <div key={photo.id} className="photoCard" title={photo.title}>
-                  {photo.imageData || photo.url.startsWith('data:image') || photo.url.startsWith('http')
-                    ? <img src={photo.imageData || photo.url} alt={photo.title} />
-                    : <div style={{ width: '100%', height: '100%', background: photo.bg || '#ddd', display: 'grid', placeItems: 'center', fontSize: '2rem' }}>{photo.emoji || photo.url || '📸'}</div>}
-                  <div className="actions" style={{ position: 'absolute', right: '6px', top: '6px' }}>
-                    <button aria-label="Delete photo" className="bred" onClick={() => patch({ ...contentSafe, photos: contentSafe.photos.filter((_, i) => i !== idx) })}>🗑️</button>
+          {panel === 'progress' && (
+            <>
+              <div className="fg"><label>Overall Mission Progress ({data.stats.overallProgress}%)</label><input type="range" min={0} max={100} value={data.stats.overallProgress} onChange={(e) => setData({ ...data, stats: { ...data.stats, overallProgress: Number(e.target.value) } })} /></div>
+              <div className="fg"><label>Current Area Progress ({data.stats.areaProgress}%)</label><input type="range" min={0} max={100} value={data.stats.areaProgress} onChange={(e) => setData({ ...data, stats: { ...data.stats, areaProgress: Number(e.target.value) } })} /></div>
+              <div className="fg"><label>Weekly Discussion Goal ({data.stats.weeklyGoalDiscussions}/{data.stats.weeklyGoalTarget})</label><input type="range" min={0} max={12} value={data.stats.weeklyGoalDiscussions} onChange={(e) => setData({ ...data, stats: { ...data.stats, weeklyGoalDiscussions: Number(e.target.value) } })} /></div>
+            </>
+          )}
+
+          {panel === 'map' && (
+            <>
+              <MapEditor
+                boundary={data.mapBoundaries.missionBoundary}
+                currentArea={data.location.areaDescription}
+                onBoundaryChange={(nextBoundary) => setData({ ...data, mapBoundaries: { ...data.mapBoundaries, missionBoundary: nextBoundary } })}
+                onCurrentAreaChange={(nextArea) => setData({ ...data, location: { ...data.location, areaDescription: nextArea } })}
+              />
+              <div className="fg" style={{ marginTop: 12 }}><label>Mission Boundary JSON [[lat,lng],...]</label><textarea onBlur={(e) => {
+                try {
+                  const parsed = JSON.parse(e.target.value) as [number, number][];
+                  if (Array.isArray(parsed)) setData({ ...data, mapBoundaries: { ...data.mapBoundaries, missionBoundary: parsed } });
+                } catch {
+                  // ignore
+                }
+              }} defaultValue={JSON.stringify(data.mapBoundaries.missionBoundary, null, 2)} /></div>
+              <button className="bn" onClick={() => {
+                const name = prompt('Area name');
+                if (!name) return;
+                const lat = Number(prompt('Area latitude', `${data.location.lat}`));
+                const lng = Number(prompt('Area longitude', `${data.location.lng}`));
+                const status = (prompt('Status: completed/current/future', 'future') || 'future') as 'completed' | 'current' | 'future';
+                setData({
+                  ...data,
+                  mapBoundaries: {
+                    ...data.mapBoundaries,
+                    areas: [...data.mapBoundaries.areas, { id: name.toLowerCase().replace(/\s+/g, ''), name, status, startDate: null, endDate: null, lat, lng, boundary: [] }]
+                  }
+                });
+              }}>Add Area</button>
+            </>
+          )}
+
+          {panel === 'updates' && (
+            <>
+              <button className="bn" onClick={() => {
+                const next = {
+                  id: Date.now(),
+                  week: data.posts.length + 1,
+                  date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                  title: 'New Weekly Update',
+                  location: data.location.areaDescription,
+                  body: 'Dear family and friends,\n\nThis week was full of faith-building moments.\n\n— Elder Gledhill',
+                  scripture: data.scripture.text,
+                  scriptureRef: data.scripture.reference,
+                  tags: ['Teaching']
+                };
+                setData({ ...data, posts: [next, ...data.posts], stats: { ...data.stats, weeklyUpdates: data.posts.length + 1 } });
+              }}>Publish Update</button>
+              {data.posts.map((post, i) => (
+                <div className="item" key={post.id}>
+                  <div><strong>Week {post.week}:</strong> {post.title}</div>
+                  <div className="actions">
+                    <button onClick={() => {
+                      const title = prompt('Edit title', post.title);
+                      if (!title) return;
+                      const next = [...data.posts];
+                      next[i] = { ...next[i], title };
+                      setData({ ...data, posts: next });
+                    }}>Edit</button>
+                    <button className="bred" onClick={() => setData({ ...data, posts: data.posts.filter((_, idx) => idx !== i), stats: { ...data.stats, weeklyUpdates: Math.max(0, data.posts.length - 1) } })}>Delete</button>
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
+            </>
+          )}
 
-        {panel === 'scripture' && (
-          <div>
-            <div className="fg"><label>Scripture Text</label><textarea value={contentSafe.scripture?.text ?? ''} onChange={(e) => patch({ ...contentSafe, scripture: { ...(contentSafe.scripture ?? { text: '', reference: '' }), text: e.target.value } })} /></div>
-            <div className="fg"><label>Reference</label><input value={contentSafe.scripture?.reference ?? ''} onChange={(e) => patch({ ...contentSafe, scripture: { ...(contentSafe.scripture ?? { text: '', reference: '' }), reference: e.target.value } })} /></div>
-          </div>
-        )}
-
-        {panel === 'timeline' && (
-          <div>
-            <button className="bn" onClick={() => {
-              const next = [...(contentSafe.timeline ?? []), { id: Date.now(), date: 'New Date', event: 'New milestone', status: 'future' as const }];
-              patch({ ...contentSafe, timeline: next });
-            }}>+ Add Milestone</button>
-
-            {(contentSafe.timeline ?? []).map((item, idx) => (
-              <div key={item.id} className="item" style={{ marginTop: '10px' }}>
+          {panel === 'photos' && (
+            <>
+              <div className="item" onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+                <p><strong>Upload Area</strong> (drag files here or browse)</p>
                 <div className="fr">
-                  <div className="fg"><label>Date</label><input value={item.date} onChange={(e) => {
-                    const next = [...(contentSafe.timeline ?? [])];
-                    next[idx] = { ...next[idx], date: e.target.value };
-                    patch({ ...contentSafe, timeline: next });
-                  }} /></div>
-                  <div className="fg"><label>Status</label><select value={item.status} onChange={(e) => {
-                    const next = [...(contentSafe.timeline ?? [])];
-                    next[idx] = { ...next[idx], status: e.target.value as 'done' | 'current' | 'future' };
-                    patch({ ...contentSafe, timeline: next });
-                  }}><option value="done">Done</option><option value="current">Current</option><option value="future">Future</option></select></div>
+                  <div className="fg">
+                    <label>Album</label>
+                    <select value={albumChoice} onChange={(e) => setAlbumChoice(e.target.value)}>
+                      {Array.from(new Set(data.photos.map((p) => p.album))).map((album) => <option key={album} value={album}>{album}</option>)}
+                      <option value="__new__">New Album...</option>
+                    </select>
+                  </div>
+                  {albumChoice === '__new__' && <div className="fg"><label>New Album Name</label><input value={newAlbum} onChange={(e) => setNewAlbum(e.target.value)} /></div>}
                 </div>
-                <div className="fg"><label>Event</label><input value={item.event} onChange={(e) => {
-                  const next = [...(contentSafe.timeline ?? [])];
-                  next[idx] = { ...next[idx], event: e.target.value };
-                  patch({ ...contentSafe, timeline: next });
-                }} /></div>
-                <button className="bred" onClick={() => patch({ ...contentSafe, timeline: (contentSafe.timeline ?? []).filter((_, i) => i !== idx) })}>Delete</button>
+                <input type="file" accept="image/*" multiple onChange={(e) => { if (e.target.files) void handleFiles(e.target.files); }} />
               </div>
-            ))}
-          </div>
-        )}
 
-        {panel === 'github' && (
-          <div>
-            <div className="fg"><label>GitHub Username</label><input value={ghUsername} onChange={(e) => setGhUsername(e.target.value)} /></div>
-            <div className="fg"><label>Repository</label><input value={ghRepo} onChange={(e) => setGhRepo(e.target.value)} /></div>
-            <div className="fg"><label>Branch</label><input value={ghBranch} onChange={(e) => setGhBranch(e.target.value)} /></div>
-            <div className="fg"><label>Personal Access Token</label><input type="password" value={ghToken} onChange={(e) => setGhToken(e.target.value)} /></div>
-            <small style={{ color: 'var(--muted)' }}>Token stored only in this browser, used only for GitHub API.</small>
-
-            <div className="actions">
-              <button className="bn bgold" onClick={async () => {
-                await saveGitHubConfig({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken });
-                setGhStatus('checking');
-                const connected = await testGitHubConnection({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken });
-                setGhStatus(connected ? 'connected' : 'failed');
-                onToast(connected ? 'GitHub connected' : 'GitHub connection failed', connected ? 'success' : 'info');
-              }}>Save + Test Connection</button>
-            </div>
-
-            <div style={{ marginTop: '12px', padding: '12px', borderRadius: '4px', background: ghStatus === 'connected' ? '#d4edda' : ghStatus === 'failed' ? '#fdecea' : '#e2e3e5' }}>
-              Status: {ghStatus}
-            </div>
-
-            <div className="fg" style={{ marginTop: '12px' }}>
-              <label>Commit Message</label>
-              <input defaultValue={`Update mission data — ${new Date().toLocaleDateString()}`} id="commitMessage" />
-            </div>
-
-            <button
-              className="bn bgold"
-              disabled={isPushing || ghStatus !== 'connected'}
-              onClick={async () => {
-                setIsPushing(true);
-                setPushLog([]);
-                const msg = (document.getElementById('commitMessage') as HTMLInputElement)?.value || 'Update mission data';
-                const result = await pushDataToGitHub({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken }, contentSafe, msg, (log) => setPushLog((prev) => [...prev, log]));
-                if (result.success) {
-                  onAudit('github_pushed', `Pushed data.json (${result.sha?.slice(0, 7)})`);
-                  onToast('Data pushed to GitHub!');
-                } else {
-                  onToast(`Push failed: ${result.error}`, 'info');
-                }
-                setIsPushing(false);
-              }}
-            >{isPushing ? 'Publishing...' : 'Push data.json to GitHub'}</button>
-
-            {pushLog.length > 0 && <textarea readOnly value={pushLog.join('\n')} style={{ width: '100%', minHeight: '150px', marginTop: '12px' }} />}
-
-            <div className="item" style={{ marginTop: '12px' }}>
-              <strong>How to get a PAT</strong>
-              <ol style={{ margin: '8px 0 0 16px' }}>
-                <li>GitHub → Settings → Developer Settings → Personal access tokens (classic)</li>
-                <li>Generate token with <code>repo</code> scope</li>
-                <li>Paste token above and save</li>
-              </ol>
-            </div>
-          </div>
-        )}
-
-        {panel === 'settings' && (
-          <div>
-            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.showProgressBar} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, showProgressBar: e.target.checked } })} /> Show Mission Progress Bar</label></div>
-            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.showMap} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, showMap: e.target.checked } })} /> Show Mission Map</label></div>
-            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.allowMessages} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, allowMessages: e.target.checked } })} /> Allow Contact Form Messages</label></div>
-            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.allowSubscriptions} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, allowSubscriptions: e.target.checked } })} /> Email Subscriptions</label></div>
-            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.photoGalleryVisible} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, photoGalleryVisible: e.target.checked } })} /> Photo Gallery Visible</label></div>
-
-            <div className="item" style={{ marginTop: '16px' }}>
-              <h3 style={{ marginBottom: '8px' }}>Change Admin Password</h3>
-              <div className="fr">
-                <div className="fg"><label>Current</label><input type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} /></div>
-                <div className="fg"><label>New</label><input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} /></div>
-              </div>
-              <div className="fg"><label>Confirm</label><input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} /></div>
-              <button className="bn" onClick={() => {
-                if (currentPw !== adminPassword) { onToast('Current password is incorrect', 'info'); return; }
-                if (!newPw || newPw !== confirmPw) { onToast('New password and confirmation must match', 'info'); return; }
-                localStorage.setItem('mission_pw', newPw);
-                setAdminPassword(newPw);
-                setCurrentPw('');
-                setNewPw('');
-                setConfirmPw('');
-                onToast('Admin password updated');
-              }}>Update Password</button>
-            </div>
-          </div>
-        )}
-
-        {panel === 'messages' && (
-          <div>
-            {(contentSafe.messages ?? []).length === 0 && <p style={{ color: 'var(--muted)' }}>No messages yet.</p>}
-            {(contentSafe.messages ?? []).map((msg, idx) => (
-              <div className="item" key={msg.id}>
-                <p><strong>{msg.name}</strong> ({msg.relation}) — {msg.email}</p>
-                <p style={{ margin: '8px 0' }}>{msg.message}</p>
-                <small>{msg.date}</small>
-                <div className="actions">
-                  <button onClick={() => window.open(`mailto:${msg.email}?subject=Mission Site Reply`, '_blank')}>Reply</button>
-                  <button className="bred" onClick={() => patch({ ...contentSafe, messages: (contentSafe.messages ?? []).filter((_, i) => i !== idx) })}>Delete</button>
+              {pendingUpload.length > 0 && (
+                <div className="item">
+                  <strong>Pending Photos</strong>
+                  <div className="photoGrid">
+                    {pendingUpload.map((p, i) => <div key={`${p.fileName}-${i}`} className="photoCard"><img src={p.imageData} alt={p.title} /></div>)}
+                  </div>
+                  <div className="actions">
+                    <button className="bgold" onClick={addPendingPhotos}>Add These Photos to Gallery</button>
+                    <button className="bred" onClick={() => setPendingUpload([])}>Clear</button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
 
-        {panel === 'subscribers' && (
-          <div>
-            <p style={{ marginBottom: '8px' }}><strong>{contentSafe.subscribers?.length ?? 0}</strong> people subscribed</p>
-            {(contentSafe.subscribers ?? []).map((sub, idx) => (
-              <div key={`${sub.email}-${idx}`} className="item">
-                <p><strong>{sub.email}</strong> — {sub.relation} — {sub.date}</p>
-                <button className="bred" onClick={() => patch({ ...contentSafe, subscribers: (contentSafe.subscribers ?? []).filter((_, i) => i !== idx) })}>Unsub</button>
+              <div className="photoGrid">
+                {data.photos.map((photo, idx) => (
+                  <div className="photoCard" key={photo.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', String(idx))} onDrop={(e) => {
+                    e.preventDefault();
+                    const from = Number(e.dataTransfer.getData('text/plain'));
+                    movePhoto(from, idx);
+                  }} onDragOver={(e) => e.preventDefault()}>
+                    {photo.imageData ? <img src={photo.imageData} alt={photo.title} /> : <div style={{ width: '100%', height: '100%', background: photo.bg, display: 'grid', placeItems: 'center' }}>{photo.emoji}</div>}
+                    <div className="actions" style={{ position: 'absolute', right: 6, top: 6 }}>
+                      <button aria-label="Delete photo" className="bred" onClick={() => setData({ ...data, photos: data.photos.filter((_, i) => i !== idx) })}>🗑️</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-            <div className="item" style={{ marginTop: '12px' }}>
-              <h3 style={{ marginBottom: '8px' }}>Broadcast Email</h3>
-              <p style={{ color: 'var(--muted)' }}>Static version note: this records intent only. Use your mail app to send broadcasts.</p>
-            </div>
-          </div>
-        )}
+            </>
+          )}
 
-        <div className="item" style={{ marginTop: '16px' }}>
-          <label>Raw JSON (advanced)</label>
-          <textarea value={jsonEditor} onChange={(e) => setJsonEditor(e.target.value)} style={{ minHeight: '180px', fontFamily: 'monospace' }} />
-          <div className="actions">
-            <button className="bn" onClick={() => {
-              try {
-                patch(JSON.parse(jsonEditor) as MissionContent);
-                onToast('JSON imported successfully');
-              } catch (e) {
-                onToast(`JSON parse error: ${(e as Error).message}`, 'info');
-              }
-            }}>Import JSON</button>
-          </div>
+          {panel === 'scripture' && (
+            <>
+              <div className="fg"><label>Scripture Text</label><textarea value={data.scripture.text} onChange={(e) => setData({ ...data, scripture: { ...data.scripture, text: e.target.value } })} /></div>
+              <div className="fg"><label>Reference</label><input value={data.scripture.reference} onChange={(e) => setData({ ...data, scripture: { ...data.scripture, reference: e.target.value } })} /></div>
+            </>
+          )}
+
+          {panel === 'timeline' && (
+            <>
+              <button className="bn" onClick={() => setData({ ...data, timeline: [...data.timeline, { id: Date.now(), date: 'New Date', event: 'New milestone', status: 'future' }] })}>+ Add Milestone</button>
+              {data.timeline.map((item, idx) => (
+                <div className="item" key={item.id}>
+                  <strong>{item.date}</strong> — {item.event} ({item.status})
+                  <div className="actions">
+                    <button onClick={() => {
+                      const event = prompt('Edit milestone', item.event);
+                      if (!event) return;
+                      const next = [...data.timeline];
+                      next[idx] = { ...next[idx], event };
+                      setData({ ...data, timeline: next });
+                    }}>Edit</button>
+                    <button className="bred" onClick={() => setData({ ...data, timeline: data.timeline.filter((_, i) => i !== idx) })}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {panel === 'github' && (
+            <>
+              <div className="fg"><label>GitHub Username</label><input value={ghUser} onChange={(e) => setGhUser(e.target.value)} /></div>
+              <div className="fg"><label>Repository Name</label><input value={ghRepo} onChange={(e) => setGhRepo(e.target.value)} /></div>
+              <div className="fg"><label>Branch</label><input value={ghBranch} onChange={(e) => setGhBranch(e.target.value)} /></div>
+              <div className="fg"><label>Personal Access Token</label><input type="password" value={ghToken} onChange={(e) => setGhToken(e.target.value)} /></div>
+              <div className="fg"><label>Commit Message</label><input value={commitMessage} onChange={(e) => setCommitMessage(e.target.value)} /></div>
+              <div className="actions">
+                <button className="bn" onClick={() => {
+                  localStorage.setItem(STORAGE_GH_KEY, JSON.stringify({ user: ghUser, repo: ghRepo, branch: ghBranch, token: ghToken }));
+                  setPushLog((prev) => [...prev, '✓ Saved GitHub config locally']);
+                }}>Save GitHub Config</button>
+                <button className="bgold" disabled={isPushing} onClick={async () => {
+                  const cfg: GitHubConfig = { user: ghUser, repo: ghRepo, branch: ghBranch, token: ghToken };
+                  try {
+                    setIsPushing(true);
+                    setPushLog((prev) => [...prev, '⏳ Pushing data.json to GitHub...']);
+                    const sha = await pushToGitHub(cfg, data, commitMessage);
+                    setPushLog((prev) => [...prev, `✅ Push success: ${sha}`]);
+                  } catch (err) {
+                    setPushLog((prev) => [...prev, `❌ ${(err as Error).message}`]);
+                  } finally {
+                    setIsPushing(false);
+                  }
+                }}>{isPushing ? 'Publishing...' : 'Push data.json to GitHub'}</button>
+              </div>
+              <textarea readOnly value={pushLog.join('\n')} style={{ width: '100%', minHeight: 160, marginTop: 12 }} />
+            </>
+          )}
+
+          {panel === 'settings' && (
+            <>
+              <div className="fg"><label><input type="checkbox" checked onChange={() => {}} /> Show Mission Progress Bar</label></div>
+              <div className="fg"><label><input type="checkbox" checked onChange={() => {}} /> Show Mission Map</label></div>
+              <div className="fg"><label><input type="checkbox" checked onChange={() => {}} /> Allow Contact Form Messages</label></div>
+              <div className="fg"><label><input type="checkbox" checked onChange={() => {}} /> Email Subscriptions</label></div>
+              <div className="fg"><label><input type="checkbox" checked onChange={() => {}} /> Photo Gallery Visible</label></div>
+            </>
+          )}
+
+          {panel === 'messages' && (
+            <>
+              {data.messages.map((msg, idx) => (
+                <div className="item" key={msg.id}>
+                  <strong>{msg.name}</strong> ({msg.relation})<br />
+                  {msg.message}
+                  <div className="actions">
+                    <button onClick={() => window.open(`mailto:${msg.email}`, '_blank')}>Reply</button>
+                    <button className="bred" onClick={() => setData({ ...data, messages: data.messages.filter((_, i) => i !== idx) })}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {panel === 'subscribers' && (
+            <>
+              <p><strong>{data.subscribers.length}</strong> people subscribed</p>
+              {data.subscribers.map((sub, idx) => (
+                <div className="item" key={`${sub.email}-${idx}`}>
+                  {sub.email} — {sub.date} ({sub.relation})
+                  <button className="bred" onClick={() => setData({ ...data, subscribers: data.subscribers.filter((_, i) => i !== idx), stats: { ...data.stats, subscribers: Math.max(0, data.subscribers.length - 1) } })}>Unsub</button>
+                </div>
+              ))}
+              <div className="fg"><label>Broadcast Email Draft</label><textarea placeholder="Static mode: draft your broadcast copy here." /></div>
+            </>
+          )}
         </div>
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }
 
 export function App() {
-  const navigate = useNavigate();
-  const [content, setContent] = useState<MissionContent>(DEFAULT_CONTENT);
-  const [users, setUsers] = useState<AppUser[]>([]);
-  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(loadAuditLog());
-  const [sessionEmail, setSessionEmail] = useState<string | null>(loadSession());
-  const [mode, setMode] = useState<ViewMode>('home');
-  const [message, setMessage] = useState('');
-  const [inactivitySecondsLeft, setInactivitySecondsLeft] = useState<number | null>(null);
-  const [toasts, setToasts] = useState<AppToast[]>([]);
-  const [bootstrapAdmin, setBootstrapAdmin] = useState<BootstrapAdminCredentials | null>(null);
+  const [data, setData] = useState<SiteData>(DEFAULT_DATA);
+  const [showLoader, setShowLoader] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [adminAuthenticated, setAdminAuthenticated] = useState(false);
+  const [adminInput, setAdminInput] = useState('');
+  const [adminPassword, setAdminPasswordState] = useState(loadPassword());
+  const [path, setPath] = useState<string>(window.location.pathname.replace(/\/+$/, '') || '/');
+
+  const go = (nextPath: string) => {
+    const normalized = nextPath.startsWith('/') ? nextPath : `/${nextPath}`;
+    window.history.pushState({}, '', normalized);
+    setPath(normalized);
+  };
 
   useEffect(() => {
-    const boot = async () => {
-      let activeContent = DEFAULT_CONTENT;
-      const localContent = loadContent();
-      if (localContent) {
-        setContent(localContent);
-        activeContent = localContent;
-      } else {
-        try {
-          const primary = await fetch('./data.json');
-          if (primary.ok) {
-            const data = (await primary.json()) as any;
-            if (data.site && data.profile) {
-              setContent(data as MissionContent);
-              activeContent = data as MissionContent;
-            }
-          }
-          if (activeContent === DEFAULT_CONTENT) {
-            const legacy = await fetch('./data/content.json');
-            if (legacy.ok) {
-              const json = (await legacy.json()) as MissionContent;
-              setContent(json);
-              activeContent = json;
-            }
-          }
-        } catch {
-          // fallback
-        }
-      }
-
-      const loadedUsers = loadUsers();
-      if (loadedUsers.length === 0) {
-        const adminEmail = normalizeEmail(activeContent.settings.adminEmails[0] ?? DEFAULT_BOOTSTRAP_ADMIN_EMAIL);
-        const salt = generateSalt();
-        const passwordHash = await hashPassword(DEFAULT_BOOTSTRAP_ADMIN_PASSWORD, salt);
-        const nowIso = new Date().toISOString();
-
-        const adminUser: AppUser = {
-          id: crypto.randomUUID(),
-          firstName: 'Site',
-          lastName: 'Admin',
-          email: adminEmail,
-          passwordHash,
-          salt,
-          status: 'approved',
-          requestedAt: nowIso,
-          decidedAt: nowIso,
-          failedLoginAttempts: 0
-        };
-
-        setUsers([adminUser]);
-        setBootstrapAdmin({
-          email: adminEmail,
-          password: DEFAULT_BOOTSTRAP_ADMIN_PASSWORD
-        });
-        setMessage('Default admin account created for first-time setup. See login details below.');
-        setAuditLog((prev) => [
-          {
-            id: `audit-${crypto.randomUUID()}`,
-            timestamp: nowIso,
-            actor: 'system',
-            action: 'admin_bootstrap_created',
-            details: `Created first-run admin account ${adminEmail}`
-          },
-          ...prev
-        ].slice(0, 200));
-      } else {
-        setUsers(loadedUsers);
-      }
-    };
-
-    void boot();
+    const onPop = () => setPath(window.location.pathname.replace(/\/+$/, '') || '/');
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   useEffect(() => {
-    saveContent(content);
-  }, [content]);
+    async function startup() {
+      setData(DEFAULT_DATA);
+      window.setTimeout(() => setShowLoader(false), 400);
+
+      const cached = loadAdminData();
+      if (cached) {
+        const { _ts: _ignoreTs, ...rest } = cached;
+        setData(rest);
+      }
+
+      const cfg = (() => {
+        try {
+          const raw = localStorage.getItem(STORAGE_GH_KEY);
+          return raw ? (JSON.parse(raw) as GitHubConfig) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+      const fresh = await loadFreshData(cfg);
+      if (fresh) setData(fresh);
+    }
+
+    void startup();
+  }, []);
 
   useEffect(() => {
-    saveUsers(users);
-  }, [users]);
+    saveAdminData(data);
+  }, [data]);
 
   useEffect(() => {
-    saveAuditLog(auditLog);
-  }, [auditLog]);
+    document.body.classList.toggle('dark', darkMode);
+  }, [darkMode]);
 
-  const currentUser = useMemo(() => {
-    if (!sessionEmail) return null;
-    return users.find((u) => normalizeEmail(u.email) === normalizeEmail(sessionEmail)) ?? null;
-  }, [sessionEmail, users]);
-
-  const isApproved = currentUser?.status === 'approved';
-  const isAdmin = !!currentUser && content.settings.adminEmails.map(normalizeEmail).includes(normalizeEmail(currentUser.email));
-  const canViewMissionInfo = !content.settings.requireApproval || isApproved || isAdmin;
-
-  const appendAudit = (action: string, details: string) => {
-    setAuditLog((prev) => [
-      {
-        id: `audit-${crypto.randomUUID()}`,
-        timestamp: new Date().toISOString(),
-        actor: currentUser?.email ?? 'system',
-        action,
-        details
-      },
-      ...prev
-    ].slice(0, 200));
-  };
-
-  const pushToast = (toastMessage: string, kind: ToastKind = 'success', ttlMs = 3500) => {
-    const id = `toast-${crypto.randomUUID()}`;
-    setToasts((prev) => [...prev, { id, message: toastMessage, kind }].slice(-4));
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, ttlMs);
-  };
-
-  const register = async (input: { firstName: string; lastName: string; email: string; password: string }) => {
-    const email = normalizeEmail(input.email);
-    if (users.some((u) => normalizeEmail(u.email) === email)) {
-      setMessage('An account with that email already exists.');
-      return;
-    }
-
-    const salt = generateSalt();
-    const passwordHash = await hashPassword(input.password, salt);
-
-    const user: AppUser = {
-      id: crypto.randomUUID(),
-      firstName: input.firstName.trim(),
-      lastName: input.lastName.trim(),
-      email,
-      passwordHash,
-      salt,
-      status: 'pending',
-      requestedAt: new Date().toISOString(),
-      failedLoginAttempts: 0
-    };
-
-    setUsers((prev) => [...prev, user]);
-    setMessage('Registration submitted. Wait for admin approval before access.');
-    pushToast('Registration submitted for approval.');
-    setMode('login');
-    appendAudit('user_registered', `${email} registered`);
-  };
-
-  const login = async (email: string, password: string) => {
-    const normalized = normalizeEmail(email);
-    const user = users.find((u) => normalizeEmail(u.email) === normalized);
-
-    if (!user) {
-      setMessage('No account found for that email.');
-      return;
-    }
-
-    const now = Date.now();
-    const lockoutUntilMs = user.lockoutUntil ? Date.parse(user.lockoutUntil) : 0;
-    if (lockoutUntilMs > now) {
-      const secondsRemaining = Math.max(1, Math.ceil((lockoutUntilMs - now) / 1000));
-      const minutes = Math.floor(secondsRemaining / 60);
-      const seconds = secondsRemaining % 60;
-      setMessage(`Too many failed attempts. Try again in ${minutes}:${String(seconds).padStart(2, '0')}.`);
-      appendAudit('login_blocked_lockout', `Blocked login for ${user.email}`);
-      return;
-    }
-
-    const attemptedHash = await hashPassword(password, user.salt);
-    if (attemptedHash !== user.passwordHash) {
-      const nextAttempts = (user.failedLoginAttempts ?? 0) + 1;
-      const shouldLock = nextAttempts >= MAX_LOGIN_ATTEMPTS;
-
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === user.id
-            ? {
-                ...u,
-                failedLoginAttempts: shouldLock ? 0 : nextAttempts,
-                lockoutUntil: shouldLock ? new Date(now + LOCKOUT_DURATION_MS).toISOString() : undefined
-              }
-            : u
-        )
-      );
-
-      if (shouldLock) {
-        setMessage('Too many failed attempts. Account locked for 15 minutes.');
-        appendAudit('login_lockout_applied', `Lockout applied to ${user.email}`);
-      } else {
-        setMessage(`Incorrect password. Attempt ${nextAttempts}/${MAX_LOGIN_ATTEMPTS}.`);
-        appendAudit('login_failed', `Failed login for ${user.email}; attempt ${nextAttempts}`);
-      }
-      return;
-    }
-
-    if (user.status !== 'approved') {
-      setMessage(`Your account is currently ${user.status}. Admin approval is required.`);
-      return;
-    }
-
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === user.id
-          ? {
-              ...u,
-              failedLoginAttempts: 0,
-              lockoutUntil: undefined
-            }
-          : u
-      )
-    );
-
-    saveSession(user.email);
-    setSessionEmail(user.email);
-    setMessage('Signed in successfully.');
-    pushToast('Signed in successfully.');
-    appendAudit('login_success', `Successful login for ${user.email}`);
-    setMode('home');
-    navigate('/');
-  };
-
-  const changePassword = async (input: {
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-  }) => {
-    if (!currentUser) {
-      setMessage('You must be signed in to change your password.');
-      setMode('login');
-      return;
-    }
-
-    if (input.newPassword !== input.confirmPassword) {
-      setMessage('New password and confirmation do not match.');
-      return;
-    }
-
-    const strength = evaluatePasswordStrength(input.newPassword);
-    if (input.newPassword.length < 10 || strength.score < 3) {
-      setMessage('New password is too weak. Use a stronger password.');
-      return;
-    }
-
-    const currentHash = await hashPassword(input.currentPassword, currentUser.salt);
-    if (currentHash !== currentUser.passwordHash) {
-      setMessage('Current password is incorrect.');
-      appendAudit('password_change_failed', `Incorrect current password for ${currentUser.email}`);
-      return;
-    }
-
-    const salt = generateSalt();
-    const passwordHash = await hashPassword(input.newPassword, salt);
-
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === currentUser.id
-          ? {
-              ...u,
-              salt,
-              passwordHash,
-              failedLoginAttempts: 0,
-              lockoutUntil: undefined
-            }
-          : u
-      )
-    );
-
-    appendAudit('password_changed', `Password changed for ${currentUser.email}`);
-    setMessage('Password changed successfully.');
-    pushToast('Password changed successfully.');
-    setMode('home');
-    navigate('/');
-  };
-
-  const logout = (reason = 'Signed out.') => {
-    saveSession(null);
-    setSessionEmail(null);
-    setInactivitySecondsLeft(null);
-    setMessage(reason);
-  };
-
-  useEffect(() => {
-    if (!sessionEmail) {
-      setInactivitySecondsLeft(null);
-      return;
-    }
-
-    const warningStartMs = Math.max(0, INACTIVITY_TIMEOUT_MS - INACTIVITY_WARNING_MS);
-    let warningTimer: number | null = null;
-    let logoutTimer: number | null = null;
-    let countdownInterval: number | null = null;
-
-    const clearTimers = () => {
-      if (warningTimer !== null) {
-        window.clearTimeout(warningTimer);
-        warningTimer = null;
-      }
-      if (logoutTimer !== null) {
-        window.clearTimeout(logoutTimer);
-        logoutTimer = null;
-      }
-      if (countdownInterval !== null) {
-        window.clearInterval(countdownInterval);
-        countdownInterval = null;
-      }
-    };
-
-    const scheduleTimeouts = () => {
-      clearTimers();
-      setInactivitySecondsLeft(null);
-
-      warningTimer = window.setTimeout(() => {
-        setInactivitySecondsLeft(Math.ceil(INACTIVITY_WARNING_MS / 1000));
-        countdownInterval = window.setInterval(() => {
-          setInactivitySecondsLeft((prev) => (prev === null ? null : Math.max(0, prev - 1)));
-        }, 1000);
-      }, warningStartMs);
-
-      logoutTimer = window.setTimeout(() => {
-        clearTimers();
-        setInactivitySecondsLeft(null);
-        appendAudit('session_timeout', `Auto logout for ${sessionEmail}`);
-        logout('Signed out due to inactivity.');
-      }, INACTIVITY_TIMEOUT_MS);
-    };
-
-    const activityEvents: Array<keyof WindowEventMap> = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
-    const onActivity = () => scheduleTimeouts();
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        scheduleTimeouts();
-      }
-    };
-
-    activityEvents.forEach((eventName) => window.addEventListener(eventName, onActivity, { passive: true }));
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    scheduleTimeouts();
-
-    return () => {
-      activityEvents.forEach((eventName) => window.removeEventListener(eventName, onActivity));
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      clearTimers();
-    };
-  }, [sessionEmail]);
-
-  useEffect(() => {
-    const focusTimer = window.setTimeout(() => {
-      const main = document.getElementById('main-content');
-      if (main instanceof HTMLElement) {
-        main.focus();
-      }
-    }, 0);
-
-    return () => window.clearTimeout(focusTimer);
-  }, [mode]);
-
-  const approveUser = (id: string, status: 'approved' | 'rejected' | 'suspended') => {
-    const target = users.find((u) => u.id === id);
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? {
-              ...u,
-              status,
-              decidedAt: new Date().toISOString()
-            }
-          : u
-      )
-    );
-    appendAudit(`user_${status}`, `Updated ${target?.email ?? id} to ${status}`);
-  };
-
-  const resetUserPassword = async (id: string): Promise<string> => {
-    const target = users.find((u) => u.id === id);
-    const temporaryPassword = generateTemporaryPassword();
-    const salt = generateSalt();
-    const passwordHash = await hashPassword(temporaryPassword, salt);
-
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? {
-              ...u,
-              salt,
-              passwordHash,
-              failedLoginAttempts: 0,
-              lockoutUntil: undefined
-            }
-          : u
-      )
-    );
-
-    appendAudit('user_password_reset', `Reset password for ${target?.email ?? id}`);
-    return temporaryPassword;
-  };
-
-
+  const sortedPosts = useMemo(() => [...data.posts].sort((a, b) => b.id - a.id), [data.posts]);
+  const routeData = { ...data, posts: sortedPosts };
 
   return (
     <div className="page">
-      <a className="skipLink" href="#main-content">Skip to main content</a>
-
-      {mode === 'login' && <div style={{ position: 'absolute', top: '0', right: '0', width: '0', height: '0', visibility: 'hidden', pointerEvents: 'none' }}>{bootstrapAdmin && <div style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(bootstrapAdmin)}</div>}</div>}
+      {showLoader && (
+        <div id="loader">
+          <div className="ld-cross">✚</div>
+          <div className="ld-txt">Loading Elder Gledhill's Mission…</div>
+        </div>
+      )}
 
       <header className="topbar">
         <div>
-          <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <h1>{content.site.title}</h1>
-          </Link>
-          <p>{content.site.subtitle}</p>
+          <h1>Elder Gledhill Mission Portal</h1>
+          <p>Idaho Idaho Falls Mission</p>
         </div>
-
-        <nav className="nav" aria-label="Primary">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/updates" className="nav-link">Updates</Link>
-          <Link to="/photos" className="nav-link">Photos</Link>
-          <Link to="/about" className="nav-link">About</Link>
-          <Link to="/contact" className="nav-link">Contact</Link>
-
-          {mode === 'login' && <button onClick={() => setMode('register')}>Register</button>}
-          {mode === 'register' && <button onClick={() => setMode('login')}>Sign In</button>}
-          {sessionEmail && <button onClick={() => setMode('changePassword')}>Change Password</button>}
-          {isAdmin && <button onClick={() => setMode('admin')}>Admin</button>}
-          {sessionEmail && <button onClick={() => { logout(); navigate('/'); }}>Logout</button>}
-          {!sessionEmail && (
-            <>
-              <button onClick={() => setMode('register')}>Register</button>
-              <button onClick={() => setMode('login')}>Sign In</button>
-            </>
-          )}
+        <nav className="nav">
+          <button className="nl" onClick={() => go('/')}>Home</button>
+          <button className="nl" onClick={() => go('/updates')}>Updates</button>
+          <button className="nl" onClick={() => go('/photos')}>Photos</button>
+          <button className="nl" onClick={() => go('/about')}>About</button>
+          <button className="nl" onClick={() => go('/contact')}>Contact</button>
+          <button className="nl" onClick={() => setDarkMode((prev) => !prev)}>{darkMode ? 'Light' : 'Dark'} Mode</button>
+          <button className="nl" onClick={() => go('/admin')}>Admin</button>
         </nav>
       </header>
 
-      {message && <p className="message">{message}</p>}
-      {inactivitySecondsLeft !== null && sessionEmail && (
-        <p className="message">Session expires in {inactivitySecondsLeft}s due to inactivity.</p>
-      )}
+      {(path === '/' || path === '/My-Mission' || path === '/My-Mission/') && <HomePage data={routeData} />}
+      {path === '/updates' && <UpdatesPage data={routeData} />}
+      {path === '/photos' && <PhotosPage data={routeData} />}
+      {path === '/about' && <AboutPage data={routeData} />}
+      {path === '/contact' && <ContactPage data={routeData} onMessageSubmit={(payload) => {
+          setData({
+            ...data,
+            messages: [{ id: Date.now(), ...payload, date: new Date().toLocaleDateString(), replied: false }, ...data.messages]
+          });
+        }} onSubscribe={(email, relation) => {
+          setData({
+            ...data,
+            subscribers: [{ email, date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), relation }, ...data.subscribers],
+            stats: { ...data.stats, subscribers: data.subscribers.length + 1 }
+          });
+        }} />}
 
-      <div className="toastStack" aria-live="polite" aria-atomic="true">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast-${toast.kind}`} role="status">
-            {toast.message}
-          </div>
-        ))}
-      </div>
+      {(path === '/admin' || path === '/admin.html') && (adminAuthenticated ? (
+        <AdminView data={data} setData={setData} />
+      ) : (
+        <main className="wrap"><div className="card narrow"><h2 className="card-title">Admin Login</h2><div className="fg"><label>Password</label><input type="password" value={adminInput} onChange={(e) => setAdminInput(e.target.value)} /></div><div className="actions"><button className="bn" onClick={() => { if (adminInput === adminPassword) setAdminAuthenticated(true); }}>Login</button></div><p style={{ marginTop: 10, fontSize: '.85rem' }}>Default password: <code>mission2024</code></p><div className="fg" style={{ marginTop: 12 }}><label>Change Password</label><input type="password" placeholder="New admin password" onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const next = (e.target as HTMLInputElement).value;
+                if (!next) return;
+                savePassword(next);
+                setAdminPasswordState(next);
+                (e.target as HTMLInputElement).value = '';
+              }
+            }} /></div></div></main>
+      ))}
 
-      {mode === 'login' && (
-        <>
-          <LoginForm onLogin={login} onSwitchToRegister={() => setMode('register')} message={message} />
-          {bootstrapAdmin && (
-            <div className="wrap" style={{ marginTop: '32px' }}>
-              <div className="card" style={{ backgroundColor: '#e8f4f8', borderLeft: '4px solid var(--gold)' }}>
-                <h3 style={{ marginBottom: '12px', color: 'var(--navy)' }}>🔑 First-Run Admin Account</h3>
-                <p style={{ marginBottom: '8px' }}>Email: <strong>{bootstrapAdmin.email}</strong></p>
-                <p style={{ marginBottom: '0' }}>Password: <strong>{bootstrapAdmin.password}</strong></p>
-                <small style={{ color: 'var(--muted)', display: 'block', marginTop: '8px' }}>Save these credentials. You'll need them to access the admin panel.</small>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {mode === 'register' && <RegisterForm onRegister={register} onSwitchToLogin={() => setMode('login')} message={message} />}
-
-      {mode === 'changePassword' && <ChangePasswordForm onSubmit={changePassword} />}
-
-      {mode === 'admin' && (
-        <AdminPanel
-          users={users}
-          content={content}
-          onUpdateContent={setContent}
-          onSetUserStatus={approveUser}
-          onResetPassword={resetUserPassword}
-          onAudit={appendAudit}
-          onToast={pushToast}
-        />
-      )}
-
-      {mode === 'home' && (
-        <Routes>
-          <Route path="/" element={<HomePage content={content} sessionEmail={sessionEmail} canViewMissionInfo={canViewMissionInfo} />} />
-          <Route path="/updates" element={<UpdatesPage content={content} />} />
-          <Route path="/photos" element={<PhotosPage content={content} />} />
-          <Route path="/about" element={<AboutPage content={content} />} />
-          <Route path="/contact" element={<ContactPage content={content} />} />
-        </Routes>
+      {!(path === '/' || path === '/updates' || path === '/photos' || path === '/about' || path === '/contact' || path === '/admin' || path === '/admin.html' || path === '/My-Mission' || path === '/My-Mission/') && (
+        <main className="wrap"><div className="card"><h2 className="card-title">Page not found</h2><button className="bn" onClick={() => go('/')}>Go Home</button></div></main>
       )}
     </div>
   );
