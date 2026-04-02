@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting…</title>
+    <script>
+      (function () {
+        var l = window.location;
+        var repoBase = l.pathname.split('/')[1] ? '/' + l.pathname.split('/')[1] + '/' : '/';
+        var redirect = repoBase + '?p=' + encodeURIComponent(l.pathname.slice(repoBase.length - 1) + l.search) + l.hash;
+        l.replace(redirect);
+      })();
+    </script>
+  </head>
+  <body>
+    Redirecting…
+  </body>
+</html>

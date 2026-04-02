@@ -8,6 +8,16 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; img-src 'self' https: data: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://tile.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
     />
+    <script>
+      (function () {
+        var url = new URL(window.location.href);
+        var p = url.searchParams.get('p');
+        if (p) {
+          var target = decodeURIComponent(p);
+          window.history.replaceState(null, '', target + (url.hash || ''));
+        }
+      })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
     <title>Elder Gledhill Mission Portal</title>

@@ -1,0 +1,40 @@
+{
+  "site": {
+    "title": "Elder Gledhill Mission Portal",
+    "subtitle": "Secure mission updates for approved viewers",
+    "missionName": "Idaho Idaho Falls Mission"
+  },
+  "profile": {
+    "firstName": "Michael",
+    "lastName": "Gledhill",
+    "bio": "Welcome to the rebuilt mission portal. This section is fully editable from admin.",
+    "testimony": "I know God lives and Jesus Christ is our Savior."
+  },
+  "updates": [
+    {
+      "id": "up-001",
+      "title": "Portal Rebuild Live",
+      "date": "2026-04-01",
+      "body": "The rebuilt secure mission portal is now live.",
+      "visibility": "public"
+    },
+    {
+      "id": "up-002",
+      "title": "Approved Members Update",
+      "date": "2026-04-01",
+      "body": "This is only visible to approved users.",
+      "visibility": "approved"
+    }
+  ],
+  "map": {
+    "boundary": [],
+    "currentArea": "Idaho Falls"
+  },
+  "photos": [],
+  "settings": {
+    "adminEmails": [
+      "admin@example.com"
+    ],
+    "requireApproval": true
+  }
+}

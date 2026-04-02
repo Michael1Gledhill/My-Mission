@@ -22,6 +22,31 @@ export interface AuditLogEntry {
   details: string;
 }
 
+export type TimelineStatus = 'done' | 'current' | 'future';
+
+export interface TimelineEvent {
+  id: number;
+  date: string;
+  event: string;
+  status: TimelineStatus;
+}
+
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  relation: string;
+  message: string;
+  date: string;
+  replied: boolean;
+}
+
+export interface Subscriber {
+  email: string;
+  date: string;
+  relation: string;
+}
+
 export interface MissionContent {
   site: {
     title: string;
@@ -36,9 +61,14 @@ export interface MissionContent {
   };
   updates: Array<{
     id: string;
+    week?: number;
     title: string;
     date: string;
+    location?: string;
     body: string;
+    scripture?: string;
+    scriptureRef?: string;
+    tags?: string[];
     visibility: 'public' | 'approved';
   }>;
   map: {
@@ -49,10 +79,38 @@ export interface MissionContent {
     id: string;
     title: string;
     url: string;
+    desc?: string;
+    album?: string;
+    date?: string;
+    bg?: string;
+    span?: string;
+    emoji?: string;
+    imageData?: string;
     visibility: 'public' | 'approved';
   }>;
   settings: {
     adminEmails: string[];
     requireApproval: boolean;
+    showProgressBar?: boolean;
+    showMap?: boolean;
+    allowMessages?: boolean;
+    allowSubscriptions?: boolean;
+    photoGalleryVisible?: boolean;
+  };
+  scripture?: {
+    text: string;
+    reference: string;
+  };
+  timeline?: TimelineEvent[];
+  messages?: ContactMessage[];
+  subscribers?: Subscriber[];
+  stats?: {
+    monthsServed: number;
+    monthsTotal: number;
+    overallProgress: number;
+    areaProgress: number;
+    weeklyGoalDiscussions: number;
+    weeklyGoalTarget: number;
+    areasServed: number;
   };
 }

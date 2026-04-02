@@ -47,7 +47,33 @@ const DEFAULT_CONTENT: MissionContent = {
   photos: [],
   settings: {
     adminEmails: ['admin@example.com'],
-    requireApproval: true
+    requireApproval: true,
+    showProgressBar: true,
+    showMap: true,
+    allowMessages: true,
+    allowSubscriptions: true,
+    photoGalleryVisible: true
+  },
+  scripture: {
+    text: 'And the Spirit shall be given unto you by the prayer of faith.',
+    reference: 'Doctrine & Covenants 42:14'
+  },
+  timeline: [
+    { id: 1, date: 'January 2024', event: 'Entered the MTC in Provo, Utah', status: 'done' },
+    { id: 2, date: 'March 2024', event: 'Arrived in Idaho — First area: Rexburg', status: 'done' },
+    { id: 3, date: 'January 2025', event: 'Transferred to Idaho Falls West', status: 'current' },
+    { id: 4, date: 'January 2026', event: 'Return Home — Mission Complete!', status: 'future' }
+  ],
+  messages: [],
+  subscribers: [],
+  stats: {
+    monthsServed: 14,
+    monthsTotal: 24,
+    overallProgress: 58,
+    areaProgress: 50,
+    weeklyGoalDiscussions: 8,
+    weeklyGoalTarget: 12,
+    areasServed: 3
   }
 };
 
@@ -247,11 +273,25 @@ function ChangePasswordForm({ onSubmit }: any) {
 }
 
 function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetPassword, onAudit, onToast }: any) {
-  const [currentTab, setCurrentTab] = useState<'queue' | 'content'>('queue');
-  const [editorMode, setEditorMode] = useState<'users' | 'site' | 'profile' | 'updates' | 'photos' | 'map' | 'json' | 'github'>('users');
+  type PanelMode =
+    | 'dashboard'
+    | 'profile'
+    | 'progress'
+    | 'map'
+    | 'updates'
+    | 'photos'
+    | 'scripture'
+    | 'timeline'
+    | 'github'
+    | 'settings'
+    | 'messages'
+    | 'subscribers';
+
+  const [panel, setPanel] = useState<PanelMode>('dashboard');
   const [tempSecret, setTempSecret] = useState<{ email: string; value: string; expiresAt: number; revealed: boolean } | null>(null);
   const [copyMessage, setCopyMessage] = useState('');
   const [jsonEditor, setJsonEditor] = useState(JSON.stringify(content, null, 2));
+  const [boundaryInput, setBoundaryInput] = useState(JSON.stringify(content.map.boundary, null, 2));
   const [ghStatus, setGhStatus] = useState<'unconfigured' | 'checking' | 'connected' | 'failed'>('unconfigured');
   const [ghUsername, setGhUsername] = useState('');
   const [ghRepo, setGhRepo] = useState('');
@@ -259,6 +299,43 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
   const [ghToken, setGhToken] = useState('');
   const [isPushing, setIsPushing] = useState(false);
   const [pushLog, setPushLog] = useState<string[]>([]);
+  const [adminPassword, setAdminPassword] = useState(localStorage.getItem('mission_pw') || 'mission2024');
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pendingUpload, setPendingUpload] = useState<Array<{ title: string; album: string; date: string; imageData: string; fileName: string }>>([]);
+  const [albumChoice, setAlbumChoice] = useState('March 2025');
+  const [newAlbum, setNewAlbum] = useState('');
+
+  const contentSafe: MissionContent = {
+    ...content,
+    scripture: content.scripture ?? { text: '', reference: '' },
+    timeline: content.timeline ?? [],
+    messages: content.messages ?? [],
+    subscribers: content.subscribers ?? [],
+    stats: content.stats ?? {
+      monthsServed: 14,
+      monthsTotal: 24,
+      overallProgress: 58,
+      areaProgress: 50,
+      weeklyGoalDiscussions: 8,
+      weeklyGoalTarget: 12,
+      areasServed: 3
+    },
+    settings: {
+      ...content.settings,
+      showProgressBar: content.settings.showProgressBar ?? true,
+      showMap: content.settings.showMap ?? true,
+      allowMessages: content.settings.allowMessages ?? true,
+      allowSubscriptions: content.settings.allowSubscriptions ?? true,
+      photoGalleryVisible: content.settings.photoGalleryVisible ?? true
+    }
+  };
+
+  const patch = (next: MissionContent) => {
+    onUpdateContent(next);
+    setJsonEditor(JSON.stringify(next, null, 2));
+  };
 
   useEffect(() => {
     const loadGhConfig = async () => {
@@ -271,8 +348,6 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
         setGhStatus('checking');
         const connected = await testGitHubConnection(cfg);
         setGhStatus(connected ? 'connected' : 'failed');
-      } else {
-        setGhStatus('unconfigured');
       }
     };
     void loadGhConfig();
@@ -288,45 +363,123 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
     return () => window.clearTimeout(timer);
   }, [tempSecret]);
 
+  const compressImage = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1200;
+          let w = img.width;
+          let h = img.height;
+          if (w > MAX) {
+            h = Math.round((h * MAX) / w);
+            w = MAX;
+          }
+          if (h > MAX) {
+            w = Math.round((w * MAX) / h);
+            h = MAX;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas not supported'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        };
+        img.onerror = () => reject(new Error('Invalid image file'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Could not read image'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoFiles = async (fileList: FileList | File[]) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+    const nextAlbum = albumChoice === '__new__' ? newAlbum.trim() || 'New Album' : albumChoice;
+    const queued: Array<{ title: string; album: string; date: string; imageData: string; fileName: string }> = [];
+    for (const file of files) {
+      if (file.size > 3 * 1024 * 1024) {
+        onToast(`Warning: ${file.name} is > 3MB before compression.`, 'info');
+      }
+      try {
+        const imageData = await compressImage(file);
+        queued.push({
+          title: file.name.replace(/\.[^.]+$/, ''),
+          album: nextAlbum,
+          date: nextAlbum,
+          imageData,
+          fileName: file.name
+        });
+      } catch {
+        onToast(`Could not process ${file.name}`, 'info');
+      }
+    }
+    setPendingUpload((prev) => [...prev, ...queued]);
+  };
+
   const pendingUsers = users.filter((u: AppUser) => u.status === 'pending');
   const approvedUsers = users.filter((u: AppUser) => u.status === 'approved');
+  const albums = Array.from(new Set(contentSafe.photos.map((p) => p.album).filter(Boolean) as string[]));
 
   return (
     <main id="main-content" tabIndex={-1} className="wrap">
       <div className="card">
         <h2 className="card-title">Admin Panel</h2>
+
         <div className="actions" style={{ marginBottom: '16px' }}>
-          <button className={currentTab === 'queue' ? 'tabActive' : ''} onClick={() => setCurrentTab('queue')}>User Queue</button>
-          <button className={currentTab === 'content' ? 'tabActive' : ''} onClick={() => setCurrentTab('content')}>Content</button>
+          {[
+            ['dashboard', 'Dashboard'],
+            ['profile', 'Profile & Info'],
+            ['progress', 'Mission Progress'],
+            ['map', 'Mission Map'],
+            ['updates', 'Weekly Updates'],
+            ['photos', 'Photos'],
+            ['scripture', 'Scripture'],
+            ['timeline', 'Timeline'],
+            ['github', 'GitHub / Publish'],
+            ['settings', 'Settings'],
+            ['messages', 'Messages'],
+            ['subscribers', 'Subscribers']
+          ].map(([key, label]) => (
+            <button key={key} className={panel === key ? 'tabActive' : ''} onClick={() => setPanel(key as PanelMode)}>{label}</button>
+          ))}
         </div>
 
-        {currentTab === 'queue' && (
+        {panel === 'dashboard' && (
           <div>
-            <h3 style={{ marginTop: '20px', marginBottom: '12px', fontSize: '1rem', fontFamily: "'Playfair Display', serif", color: 'var(--navy)' }}>
-              Approval Queue ({pendingUsers.length} pending)
-            </h3>
+            <div className="stats">
+              <article className="item statCard"><strong>{contentSafe.updates.length}</strong><small>Updates</small></article>
+              <article className="item statCard"><strong>{contentSafe.stats?.overallProgress ?? 0}%</strong><small>Mission Progress</small></article>
+              <article className="item statCard"><strong>{contentSafe.subscribers?.length ?? 0}</strong><small>Subscribers</small></article>
+              <article className="item statCard"><strong>{contentSafe.photos.length}</strong><small>Photos</small></article>
+            </div>
+
+            <h3 style={{ marginBottom: '10px' }}>Approval Queue ({pendingUsers.length})</h3>
             {pendingUsers.length === 0 && <p style={{ color: 'var(--muted)' }}>No pending users.</p>}
             {pendingUsers.map((user: AppUser) => (
               <div key={user.id} className="item">
-                <p><strong>{user.firstName} {user.lastName}</strong></p>
-                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '8px' }}>{user.email}</p>
+                <p><strong>{user.firstName} {user.lastName}</strong> — {user.email}</p>
                 <div className="actions">
-                  <button className="bgold" onClick={() => { onSetUserStatus(user.id, 'approved'); onAudit('user_approved', `Approved ${user.email}`); onToast('User approved', 'success'); }}>Approve</button>
+                  <button className="bgold" onClick={() => { onSetUserStatus(user.id, 'approved'); onAudit('user_approved', `Approved ${user.email}`); onToast('User approved'); }}>Approve</button>
                   <button className="bred" onClick={() => { onSetUserStatus(user.id, 'rejected'); onAudit('user_rejected', `Rejected ${user.email}`); onToast('User rejected', 'info'); }}>Reject</button>
                 </div>
               </div>
             ))}
 
-            <h3 style={{ marginTop: '24px', marginBottom: '12px', fontSize: '1rem', fontFamily: "'Playfair Display', serif", color: 'var(--navy)' }}>
-              Approved Users ({approvedUsers.length})
-            </h3>
+            <h3 style={{ marginTop: '20px', marginBottom: '10px' }}>Approved Users ({approvedUsers.length})</h3>
             {approvedUsers.map((user: AppUser) => (
               <div key={user.id} className="item">
-                <p><strong>{user.firstName} {user.lastName}</strong></p>
-                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '8px' }}>{user.email}</p>
+                <p><strong>{user.firstName} {user.lastName}</strong> — {user.email}</p>
                 <div className="actions">
                   <button onClick={() => { void onResetPassword(user.id).then((pwd: string) => { setTempSecret({ email: user.email, value: pwd, expiresAt: Date.now() + 60000, revealed: false }); setCopyMessage('Temporary password generated.'); }); }}>Reset Password</button>
-                  <button className="bred" onClick={() => { onSetUserStatus(user.id, 'suspended'); onAudit('user_suspended', `Suspended ${user.email}`); }}>Suspend</button>
+                  <button className="bred" onClick={() => onSetUserStatus(user.id, 'suspended')}>Suspend</button>
                 </div>
               </div>
             ))}
@@ -356,271 +509,348 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
           </div>
         )}
 
-        {currentTab === 'content' && (
+        {panel === 'profile' && (
           <div>
-            <div className="actions" style={{ marginTop: '16px', marginBottom: '16px' }}>
-              <button className={editorMode === 'site' ? 'tabActive' : ''} onClick={() => setEditorMode('site')}>Site</button>
-              <button className={editorMode === 'profile' ? 'tabActive' : ''} onClick={() => setEditorMode('profile')}>Profile</button>
-              <button className={editorMode === 'updates' ? 'tabActive' : ''} onClick={() => setEditorMode('updates')}>Updates</button>
-              <button className={editorMode === 'photos' ? 'tabActive' : ''} onClick={() => setEditorMode('photos')}>Photos</button>
-              <button className={editorMode === 'map' ? 'tabActive' : ''} onClick={() => setEditorMode('map')}>Map</button>
-              <button className={editorMode === 'json' ? 'tabActive' : ''} onClick={() => setEditorMode('json')}>JSON</button>
-              <button className={editorMode === 'github' ? 'tabActive' : ''} onClick={() => setEditorMode('github')}>GitHub</button>
+            <div className="fr">
+              <div className="fg"><label>First Name</label><input value={contentSafe.profile.firstName} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, firstName: e.target.value } })} /></div>
+              <div className="fg"><label>Last Name</label><input value={contentSafe.profile.lastName} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, lastName: e.target.value } })} /></div>
+            </div>
+            <div className="fg"><label>Mission Name</label><input value={contentSafe.site.missionName} onChange={(e) => patch({ ...contentSafe, site: { ...contentSafe.site, missionName: e.target.value } })} /></div>
+            <div className="fg"><label>Current Area</label><input value={contentSafe.map.currentArea} onChange={(e) => patch({ ...contentSafe, map: { ...contentSafe.map, currentArea: e.target.value } })} /></div>
+            <div className="fg"><label>Bio</label><textarea value={contentSafe.profile.bio} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, bio: e.target.value } })} /></div>
+            <div className="fg"><label>Testimony</label><textarea value={contentSafe.profile.testimony} onChange={(e) => patch({ ...contentSafe, profile: { ...contentSafe.profile, testimony: e.target.value } })} /></div>
+          </div>
+        )}
+
+        {panel === 'progress' && (
+          <div>
+            <div className="fr3">
+              <div className="fg"><label>Months Served</label><input type="number" value={contentSafe.stats?.monthsServed ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, monthsServed: Number(e.target.value) } })} /></div>
+              <div className="fg"><label>Total Months</label><input type="number" value={contentSafe.stats?.monthsTotal ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, monthsTotal: Number(e.target.value) } })} /></div>
+              <div className="fg"><label>Areas Served</label><input type="number" value={contentSafe.stats?.areasServed ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, areasServed: Number(e.target.value) } })} /></div>
             </div>
 
-            {editorMode === 'site' && (
-              <div>
-                <div className="fg">
-                  <label>Site Title</label>
-                  <input defaultValue={content.site.title} onChange={(e) => onUpdateContent({ ...content, site: { ...content.site, title: e.target.value } })} />
+            <div className="fg"><label>Overall Mission Progress ({contentSafe.stats?.overallProgress ?? 0}%)</label><input type="range" min={0} max={100} value={contentSafe.stats?.overallProgress ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, overallProgress: Number(e.target.value) } })} /></div>
+            <div className="fg"><label>Current Area Progress ({contentSafe.stats?.areaProgress ?? 0}%)</label><input type="range" min={0} max={100} value={contentSafe.stats?.areaProgress ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, areaProgress: Number(e.target.value) } })} /></div>
+            <div className="fg"><label>Weekly Goal ({contentSafe.stats?.weeklyGoalDiscussions ?? 0}/{contentSafe.stats?.weeklyGoalTarget ?? 12})</label><input type="range" min={0} max={12} value={contentSafe.stats?.weeklyGoalDiscussions ?? 0} onChange={(e) => patch({ ...contentSafe, stats: { ...contentSafe.stats!, weeklyGoalDiscussions: Number(e.target.value) } })} /></div>
+          </div>
+        )}
+
+        {panel === 'map' && (
+          <div>
+            <div className="fg"><label>Current Area</label><input value={contentSafe.map.currentArea} onChange={(e) => patch({ ...contentSafe, map: { ...contentSafe.map, currentArea: e.target.value } })} /></div>
+            <div className="fg"><label>Mission Boundary JSON [[lat,lng],...]</label><textarea value={boundaryInput} onChange={(e) => setBoundaryInput(e.target.value)} /></div>
+            <div className="actions">
+              <button className="bn" onClick={() => {
+                try {
+                  const parsed = JSON.parse(boundaryInput);
+                  if (!Array.isArray(parsed)) throw new Error('Boundary must be an array');
+                  patch({ ...contentSafe, map: { ...contentSafe.map, boundary: parsed } });
+                  onToast('Mission boundary imported');
+                } catch (e) {
+                  onToast(`Boundary import failed: ${(e as Error).message}`, 'info');
+                }
+              }}>Import Boundary</button>
+              <button className="bred" onClick={() => { setBoundaryInput('[]'); patch({ ...contentSafe, map: { ...contentSafe.map, boundary: [] } }); }}>Clear Boundary</button>
+            </div>
+          </div>
+        )}
+
+        {panel === 'updates' && (
+          <div>
+            <button className="bn" onClick={() => {
+              const newUpdate = {
+                id: `u-${Date.now()}`,
+                week: contentSafe.updates.length + 1,
+                title: 'New Weekly Update',
+                date: new Date().toISOString().split('T')[0],
+                location: contentSafe.map.currentArea,
+                body: 'Dear family and friends,\n\nThis week was full of meaningful experiences.\n\nLove, Elder Gledhill',
+                scripture: contentSafe.scripture?.text,
+                scriptureRef: contentSafe.scripture?.reference,
+                tags: ['Teaching'],
+                visibility: 'public' as const
+              };
+              patch({ ...contentSafe, updates: [newUpdate, ...contentSafe.updates] });
+            }}>Publish Update</button>
+
+            {contentSafe.updates.map((update, idx) => (
+              <div key={update.id} className="item" style={{ marginTop: '12px' }}>
+                <div className="fg"><label>Title</label><input value={update.title} onChange={(e) => {
+                  const next = [...contentSafe.updates];
+                  next[idx] = { ...next[idx], title: e.target.value };
+                  patch({ ...contentSafe, updates: next });
+                }} /></div>
+                <div className="fr">
+                  <div className="fg"><label>Date</label><input type="date" value={update.date} onChange={(e) => {
+                    const next = [...contentSafe.updates];
+                    next[idx] = { ...next[idx], date: e.target.value };
+                    patch({ ...contentSafe, updates: next });
+                  }} /></div>
+                  <div className="fg"><label>Visibility</label><select value={update.visibility} onChange={(e) => {
+                    const next = [...contentSafe.updates];
+                    next[idx] = { ...next[idx], visibility: e.target.value as 'public' | 'approved' };
+                    patch({ ...contentSafe, updates: next });
+                  }}><option value="public">Public</option><option value="approved">Approved</option></select></div>
                 </div>
-                <div className="fg">
-                  <label>Subtitle</label>
-                  <input defaultValue={content.site.subtitle} onChange={(e) => onUpdateContent({ ...content, site: { ...content.site, subtitle: e.target.value } })} />
-                </div>
-                <div className="fg">
-                  <label>Mission Name</label>
-                  <input defaultValue={content.site.missionName} onChange={(e) => onUpdateContent({ ...content, site: { ...content.site, missionName: e.target.value } })} />
-                </div>
-                <button className="bn" onClick={() => { onAudit('site_updated', 'Updated site settings'); onToast('Site settings saved'); }}>Save</button>
+                <div className="fg"><label>Body</label><textarea value={update.body} onChange={(e) => {
+                  const next = [...contentSafe.updates];
+                  next[idx] = { ...next[idx], body: e.target.value };
+                  patch({ ...contentSafe, updates: next });
+                }} /></div>
+                <button className="bred" onClick={() => patch({ ...contentSafe, updates: contentSafe.updates.filter((_, i) => i !== idx) })}>Delete</button>
               </div>
-            )}
+            ))}
+          </div>
+        )}
 
-            {editorMode === 'profile' && (
-              <div>
+        {panel === 'photos' && (
+          <div>
+            <div className="item" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); void handlePhotoFiles(e.dataTransfer.files); }}>
+              <p style={{ marginBottom: '8px' }}><strong>Upload Photos</strong> (drag & drop or choose files)</p>
+              <div className="fr">
                 <div className="fg">
-                  <label>First Name</label>
-                  <input defaultValue={content.profile.firstName} onChange={(e) => onUpdateContent({ ...content, profile: { ...content.profile, firstName: e.target.value } })} />
+                  <label>Album</label>
+                  <select value={albumChoice} onChange={(e) => setAlbumChoice(e.target.value)}>
+                    {albums.map((album) => <option key={album} value={album}>{album}</option>)}
+                    <option value="March 2025">March 2025</option>
+                    <option value="Early 2025">Early 2025</option>
+                    <option value="2024">2024</option>
+                    <option value="__new__">New Album…</option>
+                  </select>
                 </div>
-                <div className="fg">
-                  <label>Last Name</label>
-                  <input defaultValue={content.profile.lastName} onChange={(e) => onUpdateContent({ ...content, profile: { ...content.profile, lastName: e.target.value } })} />
-                </div>
-                <div className="fg">
-                  <label>Bio</label>
-                  <textarea defaultValue={content.profile.bio} onChange={(e) => onUpdateContent({ ...content, profile: { ...content.profile, bio: e.target.value } })} />
-                </div>
-                <div className="fg">
-                  <label>Testimony</label>
-                  <textarea defaultValue={content.profile.testimony} onChange={(e) => onUpdateContent({ ...content, profile: { ...content.profile, testimony: e.target.value } })} />
-                </div>
-                <button className="bn" onClick={() => { onAudit('profile_updated', 'Updated profile'); onToast('Profile saved'); }}>Save</button>
-              </div>
-            )}
-
-            {editorMode === 'updates' && (
-              <div>
-                <h3>Updates</h3>
-                {content.updates.map((update: any, idx: number) => (
-                  <div key={update.id} style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #eee' }}>
-                    <div className="fg">
-                      <label>Title</label>
-                      <input defaultValue={update.title} onChange={(e) => {
-                        const updated = [...content.updates];
-                        updated[idx].title = e.target.value;
-                        onUpdateContent({ ...content, updates: updated });
-                      }} />
-                    </div>
-                    <div className="fg">
-                      <label>Date</label>
-                      <input defaultValue={update.date} type="date" onChange={(e) => {
-                        const updated = [...content.updates];
-                        updated[idx].date = e.target.value;
-                        onUpdateContent({ ...content, updates: updated });
-                      }} />
-                    </div>
-                    <div className="fg">
-                      <label>Body</label>
-                      <textarea defaultValue={update.body} onChange={(e) => {
-                        const updated = [...content.updates];
-                        updated[idx].body = e.target.value;
-                        onUpdateContent({ ...content, updates: updated });
-                      }} />
-                    </div>
-                    <div className="fg">
-                      <label>Visibility</label>
-                      <select defaultValue={update.visibility} onChange={(e) => {
-                        const updated = [...content.updates];
-                        updated[idx].visibility = e.target.value as 'public' | 'approved';
-                        onUpdateContent({ ...content, updates: updated });
-                      }}>
-                        <option value="public">Public</option>
-                        <option value="approved">Approved Only</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-                <button className="bn" onClick={() => {
-                  const newUpdate = {
-                    id: `u-${Date.now()}`,
-                    title: 'New Update',
-                    date: new Date().toISOString().split('T')[0],
-                    body: 'Write your update here...',
-                    visibility: 'public' as const
-                  };
-                  onUpdateContent({ ...content, updates: [...content.updates, newUpdate] });
-                }}>Add Update</button>
-              </div>
-            )}
-
-            {editorMode === 'photos' && (
-              <div>
-                <h3>Photos</h3>
-                {content.photos.map((photo: any, idx: number) => (
-                  <div key={photo.id} style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #eee' }}>
-                    <div className="fg">
-                      <label>Title</label>
-                      <input defaultValue={photo.title} onChange={(e) => {
-                        const updated = [...content.photos];
-                        updated[idx].title = e.target.value;
-                        onUpdateContent({ ...content, photos: updated });
-                      }} />
-                    </div>
-                    <div className="fg">
-                      <label>URL (or emoji)</label>
-                      <input defaultValue={photo.url} onChange={(e) => {
-                        const updated = [...content.photos];
-                        updated[idx].url = e.target.value;
-                        onUpdateContent({ ...content, photos: updated });
-                      }} />
-                    </div>
-                    <div className="fg">
-                      <label>Visibility</label>
-                      <select defaultValue={photo.visibility} onChange={(e) => {
-                        const updated = [...content.photos];
-                        updated[idx].visibility = e.target.value as 'public' | 'approved';
-                        onUpdateContent({ ...content, photos: updated });
-                      }}>
-                        <option value="public">Public</option>
-                        <option value="approved">Approved Only</option>
-                      </select>
-                    </div>
-                    <button className="bred" onClick={() => onUpdateContent({ ...content, photos: content.photos.filter((_: any, i: number) => i !== idx) })}>Delete</button>
-                  </div>
-                ))}
-                <button className="bn" onClick={() => {
-                  const newPhoto = {
-                    id: `p-${Date.now()}`,
-                    title: 'New Photo',
-                    url: '📸',
-                    visibility: 'public' as const
-                  };
-                  onUpdateContent({ ...content, photos: [...content.photos, newPhoto] });
-                }}>Add Photo</button>
-              </div>
-            )}
-
-            {editorMode === 'map' && (
-              <div>
-                <div className="fg">
-                  <label>Current Area</label>
-                  <input defaultValue={content.map.currentArea} onChange={(e) => onUpdateContent({ ...content, map: { ...content.map, currentArea: e.target.value } })} />
-                </div>
-                <button className="bn" onClick={() => { onAudit('map_updated', 'Updated map'); onToast('Map settings saved'); }}>Save</button>
-              </div>
-            )}
-
-            {editorMode === 'json' && (
-              <div>
-                <textarea
-                  value={jsonEditor}
-                  onChange={(e) => setJsonEditor(e.target.value)}
-                  style={{ width: '100%', height: '400px', fontFamily: 'monospace', fontSize: '12px', padding: '12px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-                <button className="bn" onClick={() => {
-                  try {
-                    const parsed = JSON.parse(jsonEditor) as MissionContent;
-                    onUpdateContent(parsed);
-                    onToast('JSON imported successfully');
-                  } catch (e) {
-                    onToast(`JSON parse error: ${(e as Error).message}`, 'info');
-                  }
-                }}>Import JSON</button>
-              </div>
-            )}
-
-            {editorMode === 'github' && (
-              <div>
-                <div className="fg">
-                  <label>GitHub Username</label>
-                  <input value={ghUsername} onChange={(e) => setGhUsername(e.target.value)} />
-                </div>
-                <div className="fg">
-                  <label>Repository</label>
-                  <input value={ghRepo} onChange={(e) => setGhRepo(e.target.value)} />
-                </div>
-                <div className="fg">
-                  <label>Branch</label>
-                  <input value={ghBranch} onChange={(e) => setGhBranch(e.target.value)} />
-                </div>
-                <div className="fg">
-                  <label>Personal Access Token</label>
-                  <input type="password" value={ghToken} onChange={(e) => setGhToken(e.target.value)} placeholder="ghp_..." />
-                  <small style={{ color: 'var(--muted)' }}>Token is stored locally only, never transmitted except to GitHub.</small>
-                </div>
-
-                <button className="bn bgold" onClick={async () => {
-                  await saveGitHubConfig({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken });
-                  setGhStatus('checking');
-                  const connected = await testGitHubConnection({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken });
-                  setGhStatus(connected ? 'connected' : 'failed');
-                }}>Test Connection</button>
-
-                <div style={{ marginTop: '16px', padding: '12px', backgroundColor: ghStatus === 'connected' ? '#d4edda' : ghStatus === 'failed' ? '#f8d7da' : '#e2e3e5', borderRadius: '4px', color: ghStatus === 'connected' ? '#155724' : ghStatus === 'failed' ? '#721c24' : '#383d41' }}>
-                  {ghStatus === 'connected' && '✓ Connected to GitHub'}
-                  {ghStatus === 'failed' && '✗ Connection failed'}
-                  {ghStatus === 'unconfigured' && '⚙️ Configure and test'}
-                  {ghStatus === 'checking' && '⏳ Checking...'}
-                </div>
-
-                <div style={{ marginTop: '24px' }}>
-                  <label>Commit Message</label>
-                  <input
-                    defaultValue={`Update mission data — ${new Date().toLocaleDateString()}`}
-                    id="commitMessage"
-                    placeholder="Update mission data"
-                  />
-                </div>
-
-                <button
-                  className="bn bgold"
-                  disabled={isPushing || ghStatus !== 'connected'}
-                  onClick={async () => {
-                    setIsPushing(true);
-                    setPushLog([]);
-                    const msg = (document.getElementById('commitMessage') as HTMLInputElement)?.value || 'Update mission data';
-
-                    const result = await pushDataToGitHub(
-                      { user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken },
-                      content,
-                      msg,
-                      (log) => setPushLog((prev) => [...prev, log])
-                    );
-
-                    if (result.success) {
-                      onAudit('github_pushed', `Pushed data.json (${result.sha?.slice(0, 7)})`);
-                      onToast('Data pushed to GitHub!');
-                    } else {
-                      onToast(`Push failed: ${result.error}`, 'info');
-                    }
-
-                    setIsPushing(false);
-                  }}
-                >
-                  {isPushing ? 'Publishing...' : 'Push to GitHub'}
-                </button>
-
-                {pushLog.length > 0 && (
-                  <div style={{ marginTop: '16px', backgroundColor: '#f5f5f5', padding: '12px', borderRadius: '4px', maxHeight: '200px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '12px' }}>
-                    {pushLog.map((log, i) => (
-                      <div key={i}>{log}</div>
-                    ))}
+                {albumChoice === '__new__' && (
+                  <div className="fg">
+                    <label>New Album Name</label>
+                    <input value={newAlbum} onChange={(e) => setNewAlbum(e.target.value)} placeholder="April 2026" />
                   </div>
                 )}
               </div>
+              <input type="file" accept="image/*" multiple onChange={(e) => { if (e.target.files) void handlePhotoFiles(e.target.files); }} />
+            </div>
+
+            {pendingUpload.length > 0 && (
+              <div className="item" style={{ marginTop: '12px' }}>
+                <p><strong>Pending Upload ({pendingUpload.length})</strong></p>
+                <div className="photoGrid" style={{ marginTop: '12px' }}>
+                  {pendingUpload.map((photo, i) => (
+                    <article key={`${photo.fileName}-${i}`} className="photoCard">
+                      <img src={photo.imageData} alt={photo.title} />
+                    </article>
+                  ))}
+                </div>
+                <div className="actions">
+                  <button className="bgold" onClick={() => {
+                    const mapped = pendingUpload.map((p, idx) => ({
+                      id: `p-${Date.now()}-${idx}`,
+                      title: p.title,
+                      url: p.imageData,
+                      imageData: p.imageData,
+                      album: p.album,
+                      date: p.date,
+                      desc: '',
+                      emoji: '📸',
+                      bg: 'linear-gradient(135deg,#b8d4f0,#7aaad8)',
+                      span: '',
+                      visibility: 'public' as const
+                    }));
+                    patch({ ...contentSafe, photos: [...mapped, ...contentSafe.photos].slice(0, 50) });
+                    setPendingUpload([]);
+                    onToast('Photos added to gallery');
+                  }}>Add These Photos to Gallery</button>
+                  <button className="bred" onClick={() => setPendingUpload([])}>Clear Pending</button>
+                </div>
+              </div>
             )}
+
+            <div className="photoGrid" style={{ marginTop: '12px' }}>
+              {contentSafe.photos.map((photo, idx) => (
+                <div key={photo.id} className="photoCard" title={photo.title}>
+                  {photo.imageData || photo.url.startsWith('data:image') || photo.url.startsWith('http')
+                    ? <img src={photo.imageData || photo.url} alt={photo.title} />
+                    : <div style={{ width: '100%', height: '100%', background: photo.bg || '#ddd', display: 'grid', placeItems: 'center', fontSize: '2rem' }}>{photo.emoji || photo.url || '📸'}</div>}
+                  <div className="actions" style={{ position: 'absolute', right: '6px', top: '6px' }}>
+                    <button aria-label="Delete photo" className="bred" onClick={() => patch({ ...contentSafe, photos: contentSafe.photos.filter((_, i) => i !== idx) })}>🗑️</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        {panel === 'scripture' && (
+          <div>
+            <div className="fg"><label>Scripture Text</label><textarea value={contentSafe.scripture?.text ?? ''} onChange={(e) => patch({ ...contentSafe, scripture: { ...(contentSafe.scripture ?? { text: '', reference: '' }), text: e.target.value } })} /></div>
+            <div className="fg"><label>Reference</label><input value={contentSafe.scripture?.reference ?? ''} onChange={(e) => patch({ ...contentSafe, scripture: { ...(contentSafe.scripture ?? { text: '', reference: '' }), reference: e.target.value } })} /></div>
+          </div>
+        )}
+
+        {panel === 'timeline' && (
+          <div>
+            <button className="bn" onClick={() => {
+              const next = [...(contentSafe.timeline ?? []), { id: Date.now(), date: 'New Date', event: 'New milestone', status: 'future' as const }];
+              patch({ ...contentSafe, timeline: next });
+            }}>+ Add Milestone</button>
+
+            {(contentSafe.timeline ?? []).map((item, idx) => (
+              <div key={item.id} className="item" style={{ marginTop: '10px' }}>
+                <div className="fr">
+                  <div className="fg"><label>Date</label><input value={item.date} onChange={(e) => {
+                    const next = [...(contentSafe.timeline ?? [])];
+                    next[idx] = { ...next[idx], date: e.target.value };
+                    patch({ ...contentSafe, timeline: next });
+                  }} /></div>
+                  <div className="fg"><label>Status</label><select value={item.status} onChange={(e) => {
+                    const next = [...(contentSafe.timeline ?? [])];
+                    next[idx] = { ...next[idx], status: e.target.value as 'done' | 'current' | 'future' };
+                    patch({ ...contentSafe, timeline: next });
+                  }}><option value="done">Done</option><option value="current">Current</option><option value="future">Future</option></select></div>
+                </div>
+                <div className="fg"><label>Event</label><input value={item.event} onChange={(e) => {
+                  const next = [...(contentSafe.timeline ?? [])];
+                  next[idx] = { ...next[idx], event: e.target.value };
+                  patch({ ...contentSafe, timeline: next });
+                }} /></div>
+                <button className="bred" onClick={() => patch({ ...contentSafe, timeline: (contentSafe.timeline ?? []).filter((_, i) => i !== idx) })}>Delete</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {panel === 'github' && (
+          <div>
+            <div className="fg"><label>GitHub Username</label><input value={ghUsername} onChange={(e) => setGhUsername(e.target.value)} /></div>
+            <div className="fg"><label>Repository</label><input value={ghRepo} onChange={(e) => setGhRepo(e.target.value)} /></div>
+            <div className="fg"><label>Branch</label><input value={ghBranch} onChange={(e) => setGhBranch(e.target.value)} /></div>
+            <div className="fg"><label>Personal Access Token</label><input type="password" value={ghToken} onChange={(e) => setGhToken(e.target.value)} /></div>
+            <small style={{ color: 'var(--muted)' }}>Token stored only in this browser, used only for GitHub API.</small>
+
+            <div className="actions">
+              <button className="bn bgold" onClick={async () => {
+                await saveGitHubConfig({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken });
+                setGhStatus('checking');
+                const connected = await testGitHubConnection({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken });
+                setGhStatus(connected ? 'connected' : 'failed');
+                onToast(connected ? 'GitHub connected' : 'GitHub connection failed', connected ? 'success' : 'info');
+              }}>Save + Test Connection</button>
+            </div>
+
+            <div style={{ marginTop: '12px', padding: '12px', borderRadius: '4px', background: ghStatus === 'connected' ? '#d4edda' : ghStatus === 'failed' ? '#fdecea' : '#e2e3e5' }}>
+              Status: {ghStatus}
+            </div>
+
+            <div className="fg" style={{ marginTop: '12px' }}>
+              <label>Commit Message</label>
+              <input defaultValue={`Update mission data — ${new Date().toLocaleDateString()}`} id="commitMessage" />
+            </div>
+
+            <button
+              className="bn bgold"
+              disabled={isPushing || ghStatus !== 'connected'}
+              onClick={async () => {
+                setIsPushing(true);
+                setPushLog([]);
+                const msg = (document.getElementById('commitMessage') as HTMLInputElement)?.value || 'Update mission data';
+                const result = await pushDataToGitHub({ user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken }, contentSafe, msg, (log) => setPushLog((prev) => [...prev, log]));
+                if (result.success) {
+                  onAudit('github_pushed', `Pushed data.json (${result.sha?.slice(0, 7)})`);
+                  onToast('Data pushed to GitHub!');
+                } else {
+                  onToast(`Push failed: ${result.error}`, 'info');
+                }
+                setIsPushing(false);
+              }}
+            >{isPushing ? 'Publishing...' : 'Push data.json to GitHub'}</button>
+
+            {pushLog.length > 0 && <textarea readOnly value={pushLog.join('\n')} style={{ width: '100%', minHeight: '150px', marginTop: '12px' }} />}
+
+            <div className="item" style={{ marginTop: '12px' }}>
+              <strong>How to get a PAT</strong>
+              <ol style={{ margin: '8px 0 0 16px' }}>
+                <li>GitHub → Settings → Developer Settings → Personal access tokens (classic)</li>
+                <li>Generate token with <code>repo</code> scope</li>
+                <li>Paste token above and save</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {panel === 'settings' && (
+          <div>
+            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.showProgressBar} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, showProgressBar: e.target.checked } })} /> Show Mission Progress Bar</label></div>
+            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.showMap} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, showMap: e.target.checked } })} /> Show Mission Map</label></div>
+            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.allowMessages} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, allowMessages: e.target.checked } })} /> Allow Contact Form Messages</label></div>
+            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.allowSubscriptions} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, allowSubscriptions: e.target.checked } })} /> Email Subscriptions</label></div>
+            <div className="fg"><label><input type="checkbox" checked={!!contentSafe.settings.photoGalleryVisible} onChange={(e) => patch({ ...contentSafe, settings: { ...contentSafe.settings, photoGalleryVisible: e.target.checked } })} /> Photo Gallery Visible</label></div>
+
+            <div className="item" style={{ marginTop: '16px' }}>
+              <h3 style={{ marginBottom: '8px' }}>Change Admin Password</h3>
+              <div className="fr">
+                <div className="fg"><label>Current</label><input type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} /></div>
+                <div className="fg"><label>New</label><input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} /></div>
+              </div>
+              <div className="fg"><label>Confirm</label><input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} /></div>
+              <button className="bn" onClick={() => {
+                if (currentPw !== adminPassword) { onToast('Current password is incorrect', 'info'); return; }
+                if (!newPw || newPw !== confirmPw) { onToast('New password and confirmation must match', 'info'); return; }
+                localStorage.setItem('mission_pw', newPw);
+                setAdminPassword(newPw);
+                setCurrentPw('');
+                setNewPw('');
+                setConfirmPw('');
+                onToast('Admin password updated');
+              }}>Update Password</button>
+            </div>
+          </div>
+        )}
+
+        {panel === 'messages' && (
+          <div>
+            {(contentSafe.messages ?? []).length === 0 && <p style={{ color: 'var(--muted)' }}>No messages yet.</p>}
+            {(contentSafe.messages ?? []).map((msg, idx) => (
+              <div className="item" key={msg.id}>
+                <p><strong>{msg.name}</strong> ({msg.relation}) — {msg.email}</p>
+                <p style={{ margin: '8px 0' }}>{msg.message}</p>
+                <small>{msg.date}</small>
+                <div className="actions">
+                  <button onClick={() => window.open(`mailto:${msg.email}?subject=Mission Site Reply`, '_blank')}>Reply</button>
+                  <button className="bred" onClick={() => patch({ ...contentSafe, messages: (contentSafe.messages ?? []).filter((_, i) => i !== idx) })}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {panel === 'subscribers' && (
+          <div>
+            <p style={{ marginBottom: '8px' }}><strong>{contentSafe.subscribers?.length ?? 0}</strong> people subscribed</p>
+            {(contentSafe.subscribers ?? []).map((sub, idx) => (
+              <div key={`${sub.email}-${idx}`} className="item">
+                <p><strong>{sub.email}</strong> — {sub.relation} — {sub.date}</p>
+                <button className="bred" onClick={() => patch({ ...contentSafe, subscribers: (contentSafe.subscribers ?? []).filter((_, i) => i !== idx) })}>Unsub</button>
+              </div>
+            ))}
+            <div className="item" style={{ marginTop: '12px' }}>
+              <h3 style={{ marginBottom: '8px' }}>Broadcast Email</h3>
+              <p style={{ color: 'var(--muted)' }}>Static version note: this records intent only. Use your mail app to send broadcasts.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="item" style={{ marginTop: '16px' }}>
+          <label>Raw JSON (advanced)</label>
+          <textarea value={jsonEditor} onChange={(e) => setJsonEditor(e.target.value)} style={{ minHeight: '180px', fontFamily: 'monospace' }} />
+          <div className="actions">
+            <button className="bn" onClick={() => {
+              try {
+                patch(JSON.parse(jsonEditor) as MissionContent);
+                onToast('JSON imported successfully');
+              } catch (e) {
+                onToast(`JSON parse error: ${(e as Error).message}`, 'info');
+              }
+            }}>Import JSON</button>
+          </div>
+        </div>
       </div>
     </main>
   );
