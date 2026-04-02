@@ -18,6 +18,7 @@ import { UpdatesPage } from './pages/UpdatesPage';
 import { PhotosPage } from './pages/PhotosPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
+import { MapEditor } from './map/MapEditor';
 
 const DEFAULT_CONTENT: MissionContent = {
   site: {
@@ -539,7 +540,13 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
         {panel === 'map' && (
           <div>
             <div className="fg"><label>Current Area</label><input value={contentSafe.map.currentArea} onChange={(e) => patch({ ...contentSafe, map: { ...contentSafe.map, currentArea: e.target.value } })} /></div>
-            <div className="fg"><label>Mission Boundary JSON [[lat,lng],...]</label><textarea value={boundaryInput} onChange={(e) => setBoundaryInput(e.target.value)} /></div>
+            <MapEditor
+              boundary={contentSafe.map.boundary}
+              currentArea={contentSafe.map.currentArea}
+              onBoundaryChange={(nextBoundary) => patch({ ...contentSafe, map: { ...contentSafe.map, boundary: nextBoundary } })}
+              onCurrentAreaChange={(nextArea) => patch({ ...contentSafe, map: { ...contentSafe.map, currentArea: nextArea } })}
+            />
+            <div className="fg" style={{ marginTop: '12px' }}><label>Mission Boundary JSON [[lat,lng],...]</label><textarea value={boundaryInput} onChange={(e) => setBoundaryInput(e.target.value)} /></div>
             <div className="actions">
               <button className="bn" onClick={() => {
                 try {
@@ -877,11 +884,21 @@ export function App() {
         activeContent = localContent;
       } else {
         try {
-          const res = await fetch('./data/content.json');
-          if (res.ok) {
-            const json = (await res.json()) as MissionContent;
-            setContent(json);
-            activeContent = json;
+          const primary = await fetch('./data.json');
+          if (primary.ok) {
+            const data = (await primary.json()) as any;
+            if (data.site && data.profile) {
+              setContent(data as MissionContent);
+              activeContent = data as MissionContent;
+            }
+          }
+          if (activeContent === DEFAULT_CONTENT) {
+            const legacy = await fetch('./data/content.json');
+            if (legacy.ok) {
+              const json = (await legacy.json()) as MissionContent;
+              setContent(json);
+              activeContent = json;
+            }
           }
         } catch {
           // fallback

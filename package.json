@@ -8,10 +8,14 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "echo \"No linter configured yet\""
+    "lint": "echo \"No linter configured yet\"",
+    "validate": "python scripts/validate_data.py",
+    "sitemap": "python scripts/generate_sitemap.py"
   },
   "dependencies": {
+    "@types/leaflet-draw": "^1.0.13",
     "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.13.2"

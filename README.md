@@ -46,7 +46,7 @@ Current baseline policy:
 
 - `index.html` — Vite app entry
 - `src/` — TS/TSX frontend
-- `data/content.json` — canonical editable site content
+- `public/data.json` — canonical editable site content
 - `data/*.enc.json` — encrypted auth/audit placeholders
 - `scripts/*.py` — Python encryption/validation/migration tools
 - `.github/workflows/*.yml` — CI validation + Pages deploy + encryption utility workflow
@@ -69,7 +69,11 @@ Current baseline policy:
 
 ### Validate content
 
-- `python scripts/validate_content.py --file data/content.json`
+- `python scripts/validate_data.py`
+
+### Generate sitemap
+
+- `python scripts/generate_sitemap.py`
 
 ### Encrypt a plain auth file
 
