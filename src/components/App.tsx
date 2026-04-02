@@ -11,6 +11,8 @@ import {
   saveSession,
   saveUsers
 } from '../lib/storage';
+import { getGitHubConfig, saveGitHubConfig, testGitHubConnection, pushDataToGitHub } from '../lib/github';
+import { MissionMap } from './MissionMap';
 
 const DEFAULT_CONTENT: MissionContent = {
   site: {
@@ -717,12 +719,12 @@ export function App() {
               {content.map.boundary.length > 0 && (
                 <div className="card" style={{ marginBottom: '32px' }}>
                   <h2 className="card-title">Current Area: {content.map.currentArea}</h2>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '12px' }}>
-                    Boundary coordinates: {content.map.boundary.length} points
-                  </p>
-                  <div id="map" style={{ height: '350px', borderRadius: '8px', background: 'linear-gradient(135deg, #f0f0f0, #e0e0e0)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>
-                    Map visualization (Leaflet integration ready)
-                  </div>
+                  <MissionMap
+                    boundary={content.map.boundary}
+                    currentLat={content.map.boundary[0]?.[0] || 43.4917}
+                    currentLng={content.map.boundary[0]?.[1] || -112.0339}
+                    currentArea={content.map.currentArea}
+                  />
                 </div>
               )}
             </div>
@@ -949,10 +951,35 @@ function ChangePasswordForm({ onSubmit }: { onSubmit: (input: { currentPassword:
 
 function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetPassword, onAudit, onToast }: any) {
   const [currentTab, setCurrentTab] = useState<'queue' | 'content'>('queue');
-  const [editorMode, setEditorMode] = useState<'users' | 'site' | 'profile' | 'updates' | 'photos' | 'map' | 'json'>('users');
+  const [editorMode, setEditorMode] = useState<'users' | 'site' | 'profile' | 'updates' | 'photos' | 'map' | 'json' | 'github'>('users');
   const [tempSecret, setTempSecret] = useState<{ email: string; value: string; expiresAt: number; revealed: boolean } | null>(null);
   const [copyMessage, setCopyMessage] = useState('');
   const [jsonEditor, setJsonEditor] = useState(JSON.stringify(content, null, 2));
+  const [ghStatus, setGhStatus] = useState<'unconfigured' | 'checking' | 'connected' | 'failed'>('unconfigured');
+  const [ghUsername, setGhUsername] = useState('');
+  const [ghRepo, setGhRepo] = useState('');
+  const [ghBranch, setGhBranch] = useState('main');
+  const [ghToken, setGhToken] = useState('');
+  const [isPushing, setIsPushing] = useState(false);
+  const [pushLog, setPushLog] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadGhConfig = async () => {
+      const cfg = await getGitHubConfig();
+      if (cfg) {
+        setGhUsername(cfg.user);
+        setGhRepo(cfg.repo);
+        setGhBranch(cfg.branch);
+        setGhToken(cfg.token);
+        setGhStatus('checking');
+        const connected = await testGitHubConnection(cfg);
+        setGhStatus(connected ? 'connected' : 'failed');
+      } else {
+        setGhStatus('unconfigured');
+      }
+    };
+    void loadGhConfig();
+  }, []);
 
   useEffect(() => {
     if (!tempSecret) return;
@@ -1041,6 +1068,7 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
               <button className={editorMode === 'photos' ? 'tabActive' : ''} onClick={() => setEditorMode('photos')}>Photos</button>
               <button className={editorMode === 'map' ? 'tabActive' : ''} onClick={() => setEditorMode('map')}>Map</button>
               <button className={editorMode === 'json' ? 'tabActive' : ''} onClick={() => setEditorMode('json')}>JSON</button>
+              <button className={editorMode === 'github' ? 'tabActive' : ''} onClick={() => setEditorMode('github')}>GitHub</button>
             </div>
 
             {editorMode === 'site' && (
@@ -1092,6 +1120,117 @@ function AdminPanel({ users, content, onUpdateContent, onSetUserStatus, onResetP
                     onToast('Invalid JSON', 'info');
                   }
                 }}>Save JSON</button>
+              </div>
+            )}
+
+            {editorMode === 'github' && (
+              <div>
+                <div className="card" style={{ background: 'linear-gradient(135deg, #1A2744, #243256)', color: 'white', marginBottom: '20px', padding: '20px', borderRadius: '14px' }}>
+                  <h3 style={{ color: '#F0D898', marginBottom: '12px', fontFamily: "'Playfair Display', serif" }}>GitHub Configuration</h3>
+                  <p style={{ fontSize: '0.9rem', marginBottom: '16px', color: 'rgba(255,255,255,0.85)' }}>
+                    Connect to GitHub to publish your mission data. Your token is stored only in your browser.
+                  </p>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: ghStatus === 'connected' ? '#2a7a4a' : ghStatus === 'failed' ? '#c0392b' : '#9ca3af' }} />
+                      <span style={{ fontSize: '0.9rem' }}>
+                        {ghStatus === 'unconfigured' && 'Not configured'}
+                        {ghStatus === 'checking' && 'Checking connection...'}
+                        {ghStatus === 'connected' && '✓ Connected'}
+                        {ghStatus === 'failed' && '✗ Connection failed'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="fg" style={{ marginBottom: '12px' }}>
+                    <label style={{ color: '#F0D898' }}>GitHub Username</label>
+                    <input value={ghUsername} onChange={(e) => setGhUsername(e.target.value)} placeholder="your-username" style={{ color: '#1A2744' }} />
+                  </div>
+
+                  <div className="fg" style={{ marginBottom: '12px' }}>
+                    <label style={{ color: '#F0D898' }}>Repository Name</label>
+                    <input value={ghRepo} onChange={(e) => setGhRepo(e.target.value)} placeholder="my-mission-site" style={{ color: '#1A2744' }} />
+                  </div>
+
+                  <div className="fg" style={{ marginBottom: '12px' }}>
+                    <label style={{ color: '#F0D898' }}>Branch</label>
+                    <input value={ghBranch} onChange={(e) => setGhBranch(e.target.value)} placeholder="main" style={{ color: '#1A2744' }} />
+                  </div>
+
+                  <div className="fg" style={{ marginBottom: '16px' }}>
+                    <label style={{ color: '#F0D898' }}>Personal Access Token (PAT)</label>
+                    <input type="password" value={ghToken} onChange={(e) => setGhToken(e.target.value)} placeholder="ghp_..." style={{ color: '#1A2744' }} />
+                    <small style={{ color: 'rgba(255,255,255,0.7)' }}>Get one at github.com → Settings → Developer Settings → Personal access tokens</small>
+                  </div>
+
+                  <div className="actions">
+                    <button className="bgold" onClick={async () => {
+                      const cfg = { user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken };
+                      setGhStatus('checking');
+                      const connected = await testGitHubConnection(cfg);
+                      if (connected) {
+                        await saveGitHubConfig(cfg);
+                        setGhStatus('connected');
+                        onToast('GitHub connected!');
+                        onAudit('github_configured', `Connected to ${ghUsername}/${ghRepo}`);
+                      } else {
+                        setGhStatus('failed');
+                        onToast('Connection failed - check your credentials', 'info');
+                      }
+                    }}>Test & Save</button>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h3 style={{ marginBottom: '16px', fontFamily: "'Playfair Display', serif", fontSize: '1rem' }}>Push to GitHub</h3>
+
+                  {pushLog.length > 0 && (
+                    <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontFamily: 'monospace', fontSize: '0.8rem', maxHeight: '200px', overflowY: 'auto', color: '#2d3e5f' }}>
+                      {pushLog.map((log, idx) => (
+                        <div key={idx}>{log}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="fg" style={{ marginBottom: '16px' }}>
+                    <label>Commit Message</label>
+                    <input
+                      type="text"
+                      defaultValue={`Update mission data — ${new Date().toLocaleDateString()}`}
+                      id="commitMessage"
+                      placeholder="Update mission data"
+                    />
+                  </div>
+
+                  <button
+                    className="bn bgold"
+                    disabled={isPushing || ghStatus !== 'connected'}
+                    onClick={async () => {
+                      setIsPushing(true);
+                      setPushLog([]);
+                      const msg = (document.getElementById('commitMessage') as HTMLInputElement)?.value || 'Update mission data';
+
+                      const result = await pushDataToGitHub(
+                        { user: ghUsername, repo: ghRepo, branch: ghBranch, token: ghToken },
+                        content,
+                        msg,
+                        (log) => setPushLog((prev) => [...prev, log])
+                      );
+
+                      if (result.success) {
+                        onAudit('github_pushed', `Pushed data.json (${result.sha?.slice(0, 7)})`);
+                        onToast('Data pushed to GitHub!');
+                      } else {
+                        onToast(`Push failed: ${result.error}`, 'info');
+                      }
+
+                      setIsPushing(false);
+                    }}
+                  >
+                    {isPushing ? 'Publishing...' : 'Push to GitHub'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
